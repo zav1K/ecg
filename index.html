@@ -10,7 +10,7 @@
  <meta name="apple-mobile-web-app-title" content="ЕКГ">
  <link rel="manifest" href="/manifest.json">
  <link rel="apple-touch-icon" href="/icon-192.png">
- <title>ЕКГ-симулятор 0.8.1</title>
+ <title>ЕКГ-симулятор 0.9.0</title>
  <style>
  :root {
  --bg-color: #2b3035;
@@ -431,9 +431,9 @@
 
 <div id="patchNotesModal" class="modal-overlay">
     <div class="modal-content">
-        <div class="modal-header">Оновлення 0.8.1</div>
+        <div class="modal-header">Оновлення 0.9.0</div>
         <div class="modal-body">
-            <p>Що нового у версії 0.8.1:</p>
+            <p>Що нового у версії 0.9.0:</p>
             <ul>
                 <li><b>Мобільна верстка:</b> монітор ЕКГ, ЧСС і опис стану тепер одразу під шапкою - більше не треба гортати повз усі кнопки, щоб побачити ритм.</li>
                 <li><b>Вибір стану - акордеон:</b> групи кнопок згортаються/розгортаються тапом; на телефоні за замовчуванням розгорнута лише перша група.</li>
@@ -488,13 +488,13 @@
  </div>
  <div class="strip-footer-bar">
  <span id="stripFooterLeft">ЕКГ-симулятор · Завіднюк В.Ю.</span>
- <span>Версія 0.8.1 · 2026</span>
+ <span>Версія 0.9.0 · 2026</span>
  </div>
  </div>
 </div>
 
 <div class="container">
- <h1>ЕКГ-симулятор 0.8.1</h1>
+ <h1>ЕКГ-симулятор 0.9.0</h1>
 
  <div class="header-panel">
  <div class="subtitle" id="leadSubtitle">Відведення II | 25 мм/с · 10 мм/мВ</div>
@@ -612,7 +612,7 @@
 
  <div class="department-footer">
  <b>Завіднюк В.Ю.</b><br>
- <span id="footerVersion">Версія 0.8.1 · 2026</span><br>
+ <span id="footerVersion">Версія 0.9.0 · 2026</span><br>
  <span id="disclaimerText" style="opacity:0.75;">Навчальний інструмент. Не призначений для клінічної діагностики чи прийняття медичних рішень.</span>
  </div>
 </div>
@@ -628,7 +628,7 @@ const uiCtx = uiCanvas.getContext('2d');
 const container = document.getElementById('canvasContainer');
 const transitionOverlay = document.getElementById('transitionOverlay');
 
-const APP_VERSION = '0.8.1';
+const APP_VERSION = '0.9.0';
 function closeModal() {
  document.getElementById('patchNotesModal').classList.add('hidden');
  try { localStorage.setItem('ecgSimSeenVersion', APP_VERSION); } catch(e) {}
@@ -693,7 +693,7 @@ let currentLang = 'ua';
 
 const i18n = {
  ua: {
-  appTitle: 'ЕКГ-симулятор 0.8.1',
+  appTitle: 'ЕКГ-симулятор 0.9.0',
   langBtn: 'EN',
   examBtn: 'Режим іспиту',
   stripBtn: 'Стрічка 12 відв.',
@@ -752,20 +752,20 @@ const i18n = {
   stripClose: 'Закрити',
   stripRhythm: 'II - ритмова смуга',
   stripFooter: 'ЕКГ-симулятор · Завіднюк В.Ю.',
-  patchTitle: 'Оновлення 0.8.1',
-  patchNew: 'Що нового у версії 0.8.1:',
+  patchTitle: 'Оновлення 0.9.0',
+  patchNew: 'Що нового у версії 0.9.0:',
   patchItems: [
-   '<b>Мобільна верстка:</b> монітор ЕКГ, ЧСС і опис стану тепер одразу під шапкою - більше не треба гортати повз усі кнопки, щоб побачити ритм.',
-   '<b>Вибір стану - акордеон:</b> групи кнопок згортаються/розгортаються тапом; на телефоні за замовчуванням розгорнута лише перша група.',
-   '<b>Виправлено баг верстки:</b> групи кнопок помилково ховались і на комп\'ютері теж - тепер за замовчуванням усі відкриті на десктопі, згортаються лише на вузьких екранах.',
-   '<b>Помітніші заголовки груп:</b> тепер це виразна плашка зі стрілкою, а не дрібний сірий текст.',
+   '<b>Безкоштовний доступ розширено:</b> 17 із 25 станів і базовий режим іспиту тепер доступні без покупки.',
+   '<b>Спеціалізований преміум-пак:</b> рідкісні локалізації STEMI, усі режими кардіостимуляції, повний банк питань іспиту та експорт стрічки 12 відведень - одноразова покупка, без підписки.',
+   '<b>Виправлено:</b> підказки на моніторі під час Мобітц I/II, стрибок кривої ШЕ при високому ЧСС, збій підказок після ресайзу на паузі.',
+   '<b>Додано дисклеймер:</b> застосунок - навчальний інструмент, не для клінічної діагностики.',
   ],
   patchClose: 'Зрозуміло, почати роботу',
   caliperMs: (ms,comment) => `↔ ${ms} мс${comment}`,
   caliperMv: mv => `↕ Ампл: ${mv} мВ`,
   caliperNorm: ' норма', caliperBorder: ' межа', caliperProlonged: ' подовж.',
   instruction: '<b>Підказка:</b> Під час паузи клікніть на будь-який елемент ЕКГ для анатомічної довідки.',
-  footerVersion: 'Версія 0.8.1 · 2026',
+  footerVersion: 'Версія 0.9.0 · 2026',
   disclaimer: 'Навчальний інструмент. Не призначений для клінічної діагностики чи прийняття медичних рішень.',
   premiumTitle: 'Повний доступ',
   premiumIntro: 'Цей стан і ще кілька функцій входять до спеціалізованого преміум-паку.',
@@ -776,7 +776,7 @@ const i18n = {
   premiumWebNotice: 'Покупка доступна в мобільному застосунку в Google Play. Веб-версія поки лише для перегляду.',
  },
  en: {
-  appTitle: 'ECG Simulator 0.8.1',
+  appTitle: 'ECG Simulator 0.9.0',
   langBtn: 'UA',
   examBtn: 'Exam Mode',
   stripBtn: '12-Lead Strip',
@@ -835,20 +835,20 @@ const i18n = {
   stripClose: 'Close',
   stripRhythm: 'II - rhythm strip',
   stripFooter: 'ECG Simulator · Zavidnyuk V.Yu.',
-  patchTitle: 'Update 0.8.1',
-  patchNew: "What's new in 0.8.1:",
+  patchTitle: 'Update 0.9.0',
+  patchNew: "What's new in 0.9.0:",
   patchItems: [
-   '<b>Mobile layout:</b> the ECG monitor, HR control, and state description now sit right below the header - no more scrolling past every button to see the rhythm.',
-   '<b>State picker - accordion:</b> button groups now collapse/expand on tap; on phones only the first group is expanded by default.',
-   '<b>Fixed a layout bug:</b> groups were incorrectly hidden on desktop too - now all groups are open by default on desktop and only collapse on narrow screens.',
-   '<b>More visible group headers:</b> now a distinct bar with an arrow, instead of small gray text.',
+   '<b>Free tier expanded:</b> 17 of 25 states and basic exam mode are now free, no purchase needed.',
+   '<b>Specialist premium pack:</b> rare STEMI locations, all pacemaker modes, the full exam question bank, and 12-lead strip export - one-time purchase, no subscription.',
+   '<b>Fixed:</b> anatomy hints during Mobitz I/II, a PVC waveform glitch at high heart rates, and broken hints after a resize while paused.',
+   '<b>Added a disclaimer:</b> this app is an educational tool, not for clinical diagnosis.',
   ],
   patchClose: 'Got it, start',
   caliperMs: (ms,comment) => `↔ ${ms} ms${comment}`,
   caliperMv: mv => `↕ Ampl: ${mv} mV`,
   caliperNorm: ' normal', caliperBorder: ' borderline', caliperProlonged: ' prolonged',
   instruction: '<b>Tip:</b> While paused, click any ECG element for an anatomy reference.',
-  footerVersion: 'Version 0.8.1 · 2026',
+  footerVersion: 'Version 0.9.0 · 2026',
   disclaimer: 'Educational tool only. Not intended for clinical diagnosis or medical decision-making.',
   premiumTitle: 'Full Access',
   premiumIntro: 'This state and a few other features are part of the specialist premium pack.',
