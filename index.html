@@ -1,0 +1,2090 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+ <meta name="theme-color" content="#0d6efd">
+ <meta name="mobile-web-app-capable" content="yes">
+ <meta name="apple-mobile-web-app-capable" content="yes">
+ <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+ <meta name="apple-mobile-web-app-title" content="ЕКГ">
+ <link rel="manifest" href="/manifest.json">
+ <title>ЕКГ-симулятор 0.8.1</title>
+ <style>
+ :root {
+ --bg-color: #2b3035;
+ --panel-bg: #343a40;
+ --text-color: #f8f9fa;
+ --accent: #0d6efd;
+ --danger: #dc3545;
+ --success: #198754;
+ --info: #0dcaf0;
+ --purple: #6f42c1;
+ }
+ * { box-sizing: border-box; }
+ body {
+ font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+ background-color: var(--bg-color);
+ color: var(--text-color);
+ margin: 0; padding: 10px;
+ display: flex; justify-content: center;
+ }
+ .container {
+ background: var(--panel-bg);
+ padding: 20px; border-radius: 8px;
+ box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+ width: 100%; max-width: 1100px;
+ border-top: 4px solid var(--accent);
+ }
+ h1 {
+ text-align: center; margin: 0 0 5px 0;
+ font-size: 22px; text-transform: uppercase; letter-spacing: 1px;
+ }
+ .header-panel {
+ display: flex; justify-content: space-between; align-items: center;
+ margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+ }
+ .subtitle { color: #adb5bd; font-size: 13px; margin: 0; }
+ .tool-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+ .action-btn {
+ border: 1px solid transparent; border-radius: 4px;
+ padding: 8px 16px; font-size: 13px; font-weight: bold;
+ cursor: pointer; transition: all 0.2s; white-space: nowrap;
+ }
+ .pause-btn { background-color: var(--danger); color: white; }
+ .caliper-btn { background-color: var(--info); color: #000; }
+ .exam-btn { background-color: var(--purple); color: white; }
+ .strip-btn { background-color: #198754; color: white; }
+ .canvas-pause-btn { padding: 4px 12px; font-size: 12px; white-space: nowrap; }
+
+ /* СТРІЧКА 12 ВІДВЕДЕНЬ */
+ .strip-modal-overlay {
+ position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+ background: rgba(0,0,0,0.82); backdrop-filter: blur(5px);
+ display: flex; justify-content: center; align-items: flex-start;
+ z-index: 2000; overflow-y: auto; padding: 20px;
+ transition: opacity 0.3s ease;
+ }
+ .strip-modal-overlay.hidden { opacity: 0; pointer-events: none; }
+ .strip-modal-content {
+ background: #fff; border-radius: 8px;
+ padding: 16px; width: 100%; max-width: 960px;
+ box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+ }
+ .strip-top-bar {
+ display: flex; justify-content: space-between; align-items: center;
+ margin-bottom: 10px; flex-wrap: wrap; gap: 8px;
+ }
+ .strip-top-bar h2 { margin: 0; font-size: 15px; color: #333; font-weight: bold; }
+ .strip-meta { font-size: 12px; color: #555; line-height: 1.7; text-align: right; }
+ .strip-btn-row { display: flex; gap: 8px; }
+ .strip-action-btn {
+ padding: 7px 14px; border-radius: 4px; border: none;
+ font-size: 13px; font-weight: bold; cursor: pointer;
+ }
+ .strip-save-btn { background: #0d6efd; color: #fff; }
+ .strip-close-btn { background: #6c757d; color: #fff; }
+ /* Сам ЕКГ-бланк */
+ #stripPaper {
+ background: #fffafb;
+ background-image:
+ linear-gradient(rgba(220,53,69,0.4) 1px, transparent 1px),
+ linear-gradient(90deg, rgba(220,53,69,0.4) 1px, transparent 1px),
+ linear-gradient(rgba(220,53,69,0.14) 1px, transparent 1px),
+ linear-gradient(90deg, rgba(220,53,69,0.14) 1px, transparent 1px);
+ background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px;
+ border: 1px solid #dc3545; border-radius: 4px;
+ overflow: hidden; position: relative;
+ }
+ .strip-lead-grid {
+ display: grid; grid-template-columns: 1fr 1fr 1fr;
+ }
+ .strip-cell {
+ position: relative; height: 90px; overflow: hidden;
+ border-right: 0.5px solid rgba(220,53,69,0.25);
+ border-bottom: 0.5px solid rgba(220,53,69,0.25);
+ }
+ .strip-cell:nth-child(3n) { border-right: none; }
+ .strip-cell-label {
+ position: absolute; top: 3px; left: 5px;
+ font-size: 10px; font-weight: bold; color: #dc3545;
+ background: rgba(255,250,251,0.75); padding: 1px 3px;
+ border-radius: 2px; z-index: 2; pointer-events: none;
+ }
+ .strip-rhythm-row {
+ position: relative; height: 90px; overflow: hidden;
+ border-top: 0.5px solid rgba(220,53,69,0.35);
+ }
+ .strip-rhythm-label {
+ position: absolute; top: 3px; left: 5px;
+ font-size: 10px; font-weight: bold; color: #198754;
+ background: rgba(255,250,251,0.75); padding: 1px 3px;
+ border-radius: 2px; z-index: 2; pointer-events: none;
+ }
+ .strip-footer-bar {
+ display: flex; justify-content: space-between;
+ font-size: 10px; color: #888; padding-top: 6px;
+ }
+ @media (max-width: 600px) {
+ .strip-modal-content { padding: 8px; }
+ .strip-cell { height: 65px; }
+ .strip-rhythm-row { height: 65px; }
+ .strip-top-bar { flex-direction: column; align-items: flex-start; gap: 6px; }
+ .strip-meta { text-align: left; }
+ .strip-lead-grid { grid-template-columns: 1fr 1fr; }
+ .strip-cell:nth-child(3n) { border-right: 0.5px solid rgba(220,53,69,0.25); }
+ .strip-cell:nth-child(2n) { border-right: none; }
+ .strip-btn-row { flex-wrap: wrap; }
+ .strip-action-btn { flex: 1 1 45%; font-size: 12px; padding: 6px 8px; }
+ }
+
+ .controls-grid {
+ display: grid;
+ grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+ gap: 15px; margin-bottom: 15px;
+ }
+ .control-group {
+ background: #212529; padding: 12px;
+ border: 1px solid #495057; border-radius: 6px;
+ display: flex; flex-direction: column; gap: 8px;
+ }
+ .control-group-title {
+ font-size: 12px; text-transform: uppercase; color: #fff;
+ text-align: left; margin: -12px -12px 8px; letter-spacing: 1px;
+ cursor: pointer; list-style: none; user-select: none;
+ padding: 10px 12px; background: #343a40; border-radius: 6px 6px 0 0;
+ font-weight: 700; display: flex; align-items: center; gap: 8px;
+ border-bottom: 2px solid var(--accent);
+ }
+ .control-group-title:hover { background: #3d4349; }
+ .control-group-title::-webkit-details-marker { display: none; }
+ .control-group-title::before {
+ content: '▸'; display: inline-block; color: var(--accent);
+ font-size: 14px; transition: transform 0.15s ease; flex-shrink: 0;
+ }
+ details[open] > .control-group-title::before { transform: rotate(90deg); }
+ details[open] > .control-group-title { border-radius: 6px 6px 0 0; }
+ .mode-picker-label {
+ font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+ color: #6c757d; margin: 4px 0 8px; text-align: center;
+ }
+ button.rhythm-btn {
+ padding: 12px 8px; border: 1px solid #495057; border-radius: 4px;
+ background: var(--panel-bg); color: #e9ecef;
+ font-size: 13px; font-weight: 600; cursor: pointer;
+ transition: all 0.2s ease; width: 100%;
+ }
+ button.rhythm-btn:hover { background: #495057; color: #fff; }
+ button.rhythm-btn.active {
+ background: var(--accent); color: #fff;
+ border-color: var(--accent);
+ box-shadow: 0 2px 5px rgba(13,110,253,0.4);
+ }
+
+ /* HR + ВІДВЕДЕННЯ */
+ .controls-bottom-row {
+ display: flex; gap: 12px; margin-bottom: 15px;
+ align-items: stretch; flex-wrap: wrap;
+ }
+ .hr-control-panel {
+ flex: 1 1 280px;
+ background: #212529; border: 1px solid #495057; border-radius: 6px;
+ padding: 12px 18px; display: flex; align-items: center; gap: 12px;
+ }
+ .hr-control-label {
+ font-size: 12px; font-weight: bold; color: #adb5bd;
+ text-transform: uppercase; letter-spacing: 1px; white-space: nowrap;
+ }
+ .slider-container {
+ display: flex; align-items: center; gap: 10px; flex-grow: 1;
+ }
+ input[type=range] { flex-grow: 1; accent-color: var(--accent); cursor: pointer; }
+ .hr-display {
+ font-weight: bold; color: var(--info);
+ min-width: 70px; text-align: right; font-size: 15px;
+ white-space: nowrap; background: #343a40;
+ padding: 4px 8px; border-radius: 4px; border: 1px solid #495057;
+ }
+
+ /* БЛОК ВІДВЕДЕНЬ */
+ .lead-panel {
+ flex: 1 1 auto;
+ background: #212529; border: 1px solid #495057; border-radius: 6px;
+ padding: 10px 14px; display: flex; flex-direction: column; gap: 7px;
+ }
+ .lead-panel-title {
+ font-size: 11px; text-transform: uppercase; color: #adb5bd;
+ letter-spacing: 1px; font-weight: bold;
+ }
+ .lead-groups { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+ .lead-group-sep {
+ width: 1px; height: 22px; background: #495057; margin: 0 3px; flex-shrink: 0;
+ }
+ .lead-btn {
+ padding: 5px 10px; border: 1px solid #495057; border-radius: 4px;
+ background: var(--panel-bg); color: #e9ecef;
+ font-size: 12px; font-weight: 700; cursor: pointer;
+ transition: all 0.15s ease; letter-spacing: 0.3px; white-space: nowrap;
+ }
+ .lead-btn:hover { background: #495057; color: #fff; }
+ .lead-btn.active {
+ background: var(--success); color: #fff;
+ border-color: var(--success);
+ box-shadow: 0 1px 4px rgba(25,135,84,0.5);
+ }
+
+ /* CANVAS */
+ .canvas-outer { margin-bottom: 15px; }
+ .canvas-label-bar {
+ display: flex; justify-content: space-between; align-items: center;
+ flex-wrap: wrap; gap: 4px;
+ padding: 5px 10px; background: #212529;
+ border: 1px solid #495057; border-bottom: none;
+ border-radius: 4px 4px 0 0;
+ }
+ .canvas-lead-name { font-size: 13px; font-weight: bold; color: var(--success); letter-spacing: 1px; }
+ .canvas-scale-info { font-size: 11px; color: #6c757d; flex: 1; text-align: center; }
+ .canvas-wrapper {
+ position: relative;
+ border: 1px solid var(--danger); border-radius: 0 0 4px 4px;
+ overflow: hidden; background-color: #fffafb;
+ background-image:
+ linear-gradient(rgba(220,53,69,0.4) 1px, transparent 1px),
+ linear-gradient(90deg, rgba(220,53,69,0.4) 1px, transparent 1px),
+ linear-gradient(rgba(220,53,69,0.15) 1px, transparent 1px),
+ linear-gradient(90deg, rgba(220,53,69,0.15) 1px, transparent 1px);
+ background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px;
+ background-position: -1px -1px, -1px -1px, -1px -1px, -1px -1px;
+ width: 100%; height: 250px;
+ }
+ .canvas-transition-overlay {
+ position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+ background: #fffafb; z-index: 10; pointer-events: none;
+ opacity: 0; transition: opacity 0.22s ease;
+ }
+ .canvas-transition-overlay.active { opacity: 0.9; }
+ #ecgCanvas, #uiCanvas { display: block; position: absolute; top: 0; left: 0; }
+ #ecgCanvas { z-index: 1; }
+ #uiCanvas { z-index: 2; cursor: default; }
+
+ @keyframes borderPulse {
+ 0% { border-color: var(--danger); }
+ 50% { border-color: #ff8594; }
+ 100%{ border-color: var(--danger); }
+ }
+ .canvas-wrapper.pulse-border { animation: borderPulse 0.6s ease 2; }
+
+ /* INFO */
+ .info-box {
+ margin-top: 5px; padding: 15px;
+ background: #212529; border: 1px solid #495057;
+ border-left: 5px solid var(--accent); border-radius: 4px;
+ transition: opacity 0.25s ease, transform 0.25s ease;
+ }
+ .info-box.updating { opacity: 0; transform: translateY(5px); }
+ .info-box h3 { margin-top: 0; font-size: 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+ .info-box p { margin-bottom: 0; color: #ced4da; font-size: 14px; line-height: 1.5; }
+ .badge {
+ background: #495057; padding: 4px 8px; border-radius: 4px;
+ font-size: 11px; font-weight: bold; border: 1px solid #6c757d; white-space: nowrap;
+ }
+ .badge.danger { background: #842029; color: #f8d7da; border-color: #b02a37; }
+ .badge.warning { background: #664d03; color: #fff3cd; border-color: #997404; }
+ .badge.purple { background: #5a32a3; color: #e2d9f3; border-color: #432182; }
+ .badge.teal { background: #0a5c52; color: #a3f7ef; border-color: #0d7a6d; }
+
+ .instruction-box {
+ margin-top: 12px; padding: 10px 15px;
+ background: rgba(13,202,240,0.07); border: 1px dashed var(--info);
+ border-radius: 4px; color: #e9ecef; font-size: 13px; text-align: center;
+ }
+ .instruction-box b { color: var(--info); }
+
+ .reveal-btn {
+ background: var(--accent); color: white; border: none;
+ padding: 8px 16px; border-radius: 4px; font-weight: bold;
+ cursor: pointer; margin-top: 10px; font-size: 13px;
+ }
+
+ /* QUIZ - РЕЖИМ ІСПИТУ */
+ .quiz-options {
+ display: grid; grid-template-columns: 1fr 1fr;
+ gap: 8px; margin-top: 12px;
+ }
+ .quiz-option {
+ background: #1a2a3a; border: 1.5px solid #2a4a6a;
+ color: #cde; border-radius: 6px; padding: 10px 12px;
+ font-size: 13px; cursor: pointer; text-align: left;
+ transition: background 0.15s, border-color 0.15s;
+ line-height: 1.35; min-height: 48px;
+ word-break: break-word; hyphens: auto;
+ }
+ .quiz-option:hover:not(:disabled) { background: #1e3a55; border-color: var(--accent); }
+ .quiz-option.correct { background: #0d3320; border-color: #28a745; color: #6dff9a; pointer-events:none; }
+ .quiz-option.wrong { background: #3a0d0d; border-color: #dc3545; color: #ff8a8a; pointer-events:none; }
+ .quiz-option.reveal { background: #0d3320; border-color: #28a745; color: #6dff9a; pointer-events:none; }
+ .quiz-option:disabled { pointer-events: none; opacity: 0.6; }
+ .quiz-feedback {
+ margin-top: 12px; padding: 10px 14px; border-radius: 6px;
+ font-size: 13px; line-height: 1.5; display: none;
+ }
+ .quiz-feedback.correct { background: #0d3320; border: 1px solid #28a745; color: #6dff9a; display:block; }
+ .quiz-feedback.wrong { background: #3a0d0d; border: 1px solid #dc3545; color: #ffaaaa; display:block; }
+ .quiz-next-btn {
+ background: var(--purple); color: white; border: none;
+ padding: 8px 18px; border-radius: 4px; font-weight: bold;
+ cursor: pointer; font-size: 13px; display: none;
+ white-space: nowrap;
+ }
+ .quiz-score {
+ font-size: 12px; color: #aaa; margin-top: 4px;
+ }
+ @media (max-width: 500px) {
+ .quiz-options { grid-template-columns: 1fr; }
+ }
+
+ /* МОДАЛЬНЕ ВІКНО */
+ .modal-overlay {
+ position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+ background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+ display: flex; justify-content: center; align-items: center;
+ z-index: 1000; transition: opacity 0.3s ease;
+ }
+ .modal-overlay.hidden { opacity: 0; pointer-events: none; }
+ .modal-content {
+ background: var(--panel-bg); border: 1px solid var(--accent);
+ border-radius: 8px; padding: 25px; max-width: 540px; width: 90%;
+ box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+ transition: transform 0.3s ease;
+ }
+ .modal-overlay.hidden .modal-content { transform: translateY(-30px); }
+ .modal-header { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #fff; border-bottom: 1px solid #495057; padding-bottom: 10px; }
+ .modal-body { color: #ced4da; font-size: 14px; line-height: 1.5; }
+ .modal-body ul { padding-left: 20px; margin-top: 10px; }
+ .modal-body li { margin-bottom: 10px; }
+ .modal-body b { color: var(--info); }
+ .modal-close-btn {
+ background: var(--success); color: white; border: none; padding: 12px;
+ border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%;
+ margin-top: 15px; font-size: 14px; transition: background 0.2s;
+ }
+ .modal-close-btn:hover { background: #157347; }
+
+ .department-footer {
+ margin-top: 20px; padding-top: 15px;
+ border-top: 1px solid #495057; text-align: center;
+ color: #6c757d; font-size: 12px; line-height: 1.6; letter-spacing: 0.5px;
+ }
+ .department-footer b { color: #adb5bd; }
+
+ @media (max-width: 768px) {
+ .hr-control-panel { flex-direction: column; flex: 0 1 auto; gap: 8px; padding: 10px; align-items: stretch; }
+ .slider-container { width: 100%; }
+ .controls-bottom-row { flex-direction: column; }
+ .lead-panel { flex: 0 1 auto; }
+ }
+ @media (max-width: 600px) {
+ h1 { font-size: 18px; }
+ .container { padding: 10px; }
+ .header-panel { flex-direction: column; text-align: center; }
+ .canvas-wrapper { height: 200px; }
+ .controls-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+ .tool-buttons { width: 100%; flex-wrap: wrap; justify-content: center; }
+ .action-btn { flex: 1 1 45%; text-align: center; font-size: 12px; padding: 7px 6px; }
+ .lead-btn { padding: 4px 7px; font-size: 11px; }
+ .canvas-scale-info { display: none; }
+ .quiz-options { grid-template-columns: 1fr; }
+ .quiz-option { min-height: 40px; font-size: 13px; }
+ .info-box h3 { font-size: 14px; flex-wrap: wrap; }
+ .info-box p { font-size: 13px; }
+ }
+ @media (max-width: 380px) {
+ .controls-grid { grid-template-columns: 1fr; }
+ h1 { font-size: 15px; }
+ .action-btn { flex: 1 1 100%; }
+ }
+ </style>
+</head>
+<body>
+
+<div id="patchNotesModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">Оновлення 0.8.1</div>
+        <div class="modal-body">
+            <p>Що нового у версії 0.8.1:</p>
+            <ul>
+                <li><b>Мобільна верстка:</b> монітор ЕКГ, ЧСС і опис стану тепер одразу під шапкою - більше не треба гортати повз усі кнопки, щоб побачити ритм.</li>
+                <li><b>Вибір стану - акордеон:</b> групи кнопок згортаються/розгортаються тапом; на телефоні за замовчуванням розгорнута лише перша група.</li>
+                <li><b>Виправлено баг верстки:</b> групи кнопок помилково ховались і на комп'ютері теж - тепер за замовчуванням усі відкриті на десктопі, згортаються лише на вузьких екранах.</li>
+                <li><b>Помітніші заголовки груп:</b> тепер це виразна плашка зі стрілкою, а не дрібний сірий текст.</li>
+            </ul>
+            <button class="modal-close-btn" onclick="closeModal()">Зрозуміло, почати роботу</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- МОДАЛЬНЕ ВІКНО: СТРІЧКА 12 ВІДВЕДЕНЬ -->
+<div id="stripModal" class="strip-modal-overlay hidden" onclick="closeStripOutside(event)">
+ <div class="strip-modal-content" id="stripModalContent">
+ <div class="strip-top-bar">
+ <div>
+ <h2 id="stripModalTitle"> Стрічка 12 відведень</h2>
+ <div style="font-size:11px;color:#888;margin-top:2px;">25 мм/с · 10 мм/мВ</div>
+ </div>
+ <div class="strip-meta" id="stripMeta"></div>
+ <div class="strip-btn-row">
+ <button class="strip-action-btn strip-save-btn" onclick="saveStripPNG()">Зберегти PNG</button>
+ <button class="strip-action-btn strip-close-btn" onclick="closeStrip()">Закрити</button>
+ </div>
+ </div>
+ <div id="stripPaper">
+ <div class="strip-lead-grid" id="stripLeadGrid"></div>
+ <div class="strip-rhythm-row" id="stripRhythmRow">
+ <div class="strip-rhythm-label">II - ритмова смуга</div>
+ </div>
+ </div>
+ <div class="strip-footer-bar">
+ <span id="stripFooterLeft">ЕКГ-симулятор · Завіднюк В.Ю.</span>
+ <span>Версія 0.8.1 · 2026</span>
+ </div>
+ </div>
+</div>
+
+<div class="container">
+ <h1>ЕКГ-симулятор 0.8.1</h1>
+
+ <div class="header-panel">
+ <div class="subtitle" id="leadSubtitle">Відведення II | 25 мм/с · 10 мм/мВ</div>
+ <div class="tool-buttons">
+ <button id="langBtn" class="action-btn" onclick="toggleLang()" style="background:var(--info);color:#000;font-weight:700;min-width:52px;">EN</button>
+ <button id="examBtn" class="action-btn exam-btn" onclick="startExamMode()">Режим іспиту</button>
+ <button id="stripBtn" class="action-btn strip-btn" onclick="openStrip()">Стрічка 12 відв.</button>
+ <button id="caliperBtn" class="action-btn caliper-btn" onclick="toggleCaliper()">Циркуль: ВИМК</button>
+ </div>
+ </div>
+
+ <div class="controls-bottom-row">
+ <div class="hr-control-panel">
+ <div class="hr-control-label" id="hrLabel">ЧСС:</div>
+ <div class="slider-container">
+ <input type="range" id="hrSlider" min="30" max="200" value="75" oninput="updateHR(this.value)">
+ <span class="hr-display" id="hrDisplay">75 уд/хв</span>
+ </div>
+ </div>
+ <div class="lead-panel">
+ <div class="lead-panel-title">Відведення</div>
+ <div class="lead-groups">
+ <button class="lead-btn" id="lead-I" onclick="setLead('I',this)">I</button>
+ <button class="lead-btn active" id="lead-II" onclick="setLead('II',this)">II</button>
+ <button class="lead-btn" id="lead-III" onclick="setLead('III',this)">III</button>
+ <div class="lead-group-sep"></div>
+ <button class="lead-btn" id="lead-aVR" onclick="setLead('aVR',this)">aVR</button>
+ <button class="lead-btn" id="lead-aVL" onclick="setLead('aVL',this)">aVL</button>
+ <button class="lead-btn" id="lead-aVF" onclick="setLead('aVF',this)">aVF</button>
+ <div class="lead-group-sep"></div>
+ <button class="lead-btn" id="lead-V1" onclick="setLead('V1',this)">V1</button>
+ <button class="lead-btn" id="lead-V2" onclick="setLead('V2',this)">V2</button>
+ <button class="lead-btn" id="lead-V3" onclick="setLead('V3',this)">V3</button>
+ <button class="lead-btn" id="lead-V4" onclick="setLead('V4',this)">V4</button>
+ <button class="lead-btn" id="lead-V5" onclick="setLead('V5',this)">V5</button>
+ <button class="lead-btn" id="lead-V6" onclick="setLead('V6',this)">V6</button>
+ </div>
+ </div>
+ </div>
+
+ <div class="canvas-outer">
+ <div class="canvas-label-bar">
+ <span class="canvas-lead-name" id="canvasLeadName">Відведення II</span>
+ <span class="canvas-scale-info">25 мм/с · 10 мм/мВ</span>
+ <button id="pauseBtn" class="action-btn pause-btn canvas-pause-btn" onclick="togglePause()">Пауза</button>
+ </div>
+ <div class="canvas-wrapper" id="canvasContainer">
+ <canvas id="ecgCanvas"></canvas>
+ <canvas id="uiCanvas" title="Під час паузи натисніть на зубець для довідки"></canvas>
+ <div class="canvas-transition-overlay" id="transitionOverlay"></div>
+ </div>
+ </div>
+
+ <div class="info-box" id="infoBox">
+ <h3 id="descTitle"><span class="badge" id="descBadge">Базовий ритм</span> Правильний синусовий ритм</h3>
+ <div id="descTextContainer">
+ <p id="descText">Фізіологічна норма. Реєструється правильний синусовий ритм. Використовуйте повзунок ЧСС для імітації синусової тахікардії або брадикардії.</p>
+ </div>
+ </div>
+
+ <div class="mode-picker-label">Обрати стан для симуляції:</div>
+ <div class="controls-grid">
+ <details class="control-group" open>
+ <summary class="control-group-title">Базові стани</summary>
+ <button class="rhythm-btn active" id="btn-normal" onclick="setMode('normal',this)">Нормальний ритм</button>
+ <button class="rhythm-btn" id="btn-lvh" onclick="setMode('lvh',this)">Гіпертрофія ЛШ</button>
+ <button class="rhythm-btn" id="btn-pe" onclick="setMode('pe',this)">ТЕЛА</button>
+ </details>
+ <details class="control-group" open>
+ <summary class="control-group-title">Ішемія / Інфаркт</summary>
+ <button class="rhythm-btn" id="btn-nstemi" onclick="setMode('nstemi',this)">NSTEMI / НС</button>
+ <button class="rhythm-btn" id="btn-infarct" onclick="setMode('infarct',this)">Постінфарктний (Q)</button>
+ </details>
+ <details class="control-group" open>
+ <summary class="control-group-title" id="stemi-sub-label">STEMI за локалізацією</summary>
+ <button class="rhythm-btn" id="btn-stemi_inf" onclick="setMode('stemi_inf',this)">STEMI - Нижній</button>
+ <button class="rhythm-btn" id="btn-stemi_ant" onclick="setMode('stemi_ant',this)">STEMI - Передній</button>
+ <button class="rhythm-btn" id="btn-stemi_lat" onclick="setMode('stemi_lat',this)">STEMI - Бічний</button>
+ <button class="rhythm-btn" id="btn-stemi_post" onclick="setMode('stemi_post',this)">STEMI - Задній </button>
+ <button class="rhythm-btn" id="btn-stemi_rv" onclick="setMode('stemi_rv',this)">STEMI - Правий шлуночок </button>
+ </details>
+ <details class="control-group" open>
+ <summary class="control-group-title">Аритмії</summary>
+ <button class="rhythm-btn" id="btn-afib" onclick="setMode('afib',this)">Фібриляція передсердь</button>
+ <button class="rhythm-btn" id="btn-pvc" onclick="setMode('pvc',this)">Екстрасистола (ШЕ)</button>
+ <button class="rhythm-btn" id="btn-vt" onclick="setMode('vt',this)">Шлуночкова тахікардія</button>
+ </details>
+ <details class="control-group" open>
+ <summary class="control-group-title">Блокади / Метаболізм</summary>
+ <button class="rhythm-btn" id="btn-avblock" onclick="setMode('avblock',this)">Повна АВ-блокада</button>
+ <button class="rhythm-btn" id="btn-lbbb" onclick="setMode('lbbb',this)">Блокада ЛНПГ</button>
+ <button class="rhythm-btn" id="btn-hyperk" onclick="setMode('hyperk',this)">Гіперкаліємія</button>
+ </details>
+ <details class="control-group" open>
+ <summary class="control-group-title">Провідність / Інше</summary>
+ <button class="rhythm-btn" id="btn-mobitz1" onclick="setMode('mobitz1',this)">АВ-блокада II ст. Мобітц I</button>
+ <button class="rhythm-btn" id="btn-mobitz2" onclick="setMode('mobitz2',this)">АВ-блокада II ст. Мобітц II</button>
+ <button class="rhythm-btn" id="btn-wpw" onclick="setMode('wpw',this)">WPW-синдром</button>
+ <button class="rhythm-btn" id="btn-sinusarr" onclick="setMode('sinusarr',this)">Синусова аритмія</button>
+ <button class="rhythm-btn" id="btn-pericarditis" onclick="setMode('pericarditis',this)">Гострий перикардит</button>
+ </details>
+ <details class="control-group" open>
+ <summary class="control-group-title">Кардіостимулятори</summary>
+ <button class="rhythm-btn" id="btn-vvi" onclick="setMode('vvi',this)">VVI - Шлуночкова</button>
+ <button class="rhythm-btn" id="btn-aai" onclick="setMode('aai',this)">AAI - Передсердна</button>
+ <button class="rhythm-btn" id="btn-ddd" onclick="setMode('ddd',this)">DDD - Двокамерна</button>
+ <button class="rhythm-btn" id="btn-crt" onclick="setMode('crt',this)">CRT - Трикамерна</button>
+ </details>
+ </div>
+
+
+ <div class="instruction-box" id="instructionBlock">
+ <span id="instructionText"><b>Підказка:</b> Під час паузи клікніть на будь-який елемент ЕКГ для анатомічної довідки.</span>
+ </div>
+
+ <div class="department-footer">
+ <b>Завіднюк В.Ю.</b><br>
+ <span id="footerVersion">Версія 0.8.1 · 2026</span>
+ </div>
+</div>
+
+<script>
+'use strict';
+
+// DOM 
+const canvas = document.getElementById('ecgCanvas');
+const ctx = canvas.getContext('2d');
+const uiCanvas = document.getElementById('uiCanvas');
+const uiCtx = uiCanvas.getContext('2d');
+const container = document.getElementById('canvasContainer');
+const transitionOverlay = document.getElementById('transitionOverlay');
+
+const APP_VERSION = '0.8.1';
+function closeModal() {
+ document.getElementById('patchNotesModal').classList.add('hidden');
+ try { localStorage.setItem('ecgSimSeenVersion', APP_VERSION); } catch(e) {}
+}
+(function initPatchModal() {
+ try {
+  if (localStorage.getItem('ecgSimSeenVersion') === APP_VERSION) {
+   document.getElementById('patchNotesModal').classList.add('hidden');
+  }
+ } catch(e) {}
+})();
+
+// RESIZE 
+let baselineY = 150;
+let hitMap = [];
+
+function resizeCanvas() {
+ const w = container.clientWidth, h = container.clientHeight;
+ canvas.width = uiCanvas.width = w;
+ canvas.height = uiCanvas.height = h;
+ baselineY = h / 2 + 10;
+ hitMap = new Array(w);
+}
+let resizeTimer;
+window.addEventListener('resize', () => {
+ clearTimeout(resizeTimer);
+ resizeTimer = setTimeout(() => {
+ const newW = container.clientWidth, newH = container.clientHeight;
+ // Якщо розміри не змінились (мобільний скрол ховає/показує адресний рядок) - нічого не робимо
+ if (newW === canvas.width && newH === canvas.height) return;
+ // Якщо пауза - зберігаємо вміст canvas і відновлюємо після ресайзу
+ if (isPaused) {
+ const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+ const oldW = canvas.width, oldH = canvas.height;
+ resizeCanvas();
+ // Відновлюємо збережений знімок (масштабуємо якщо потрібно)
+ const tmp = document.createElement('canvas');
+ tmp.width = oldW; tmp.height = oldH;
+ tmp.getContext('2d').putImageData(snapshot, 0, 0);
+ ctx.drawImage(tmp, 0, 0, oldW, oldH, 0, 0, canvas.width, canvas.height);
+ baselineY = canvas.height / 2 + 10;
+ hitMap = new Array(canvas.width);
+ } else {
+ cancelAnimationFrame(animationId);
+ resizeCanvas(); resetMonitor();
+ drawMonitorFrame();
+ }
+ }, 120);
+});
+resizeCanvas();
+
+// ЛОКАЛІЗАЦІЯ (UA / EN) 
+let currentLang = 'ua';
+
+const i18n = {
+ ua: {
+  appTitle: 'ЕКГ-симулятор 0.8.1',
+  langBtn: 'EN',
+  examBtn: 'Режим іспиту',
+  stripBtn: 'Стрічка 12 відв.',
+  caliperOn: ' Циркуль: УВІМК',
+  caliperOff: 'Циркуль: ВИМК',
+  pauseBtn: 'Пауза',
+  resumeBtn: 'Продовжити',
+  leadSubtitle: l => `Відведення ${l} | 25 мм/с · 10 мм/мВ`,
+  canvasLead: l => `Відведення ${l}`,
+  hrLabel: 'ЧСС:',
+  hrUnit: 'уд/хв',
+  leadPanelTitle: 'Відведення',
+  groupBasic: 'Базові стани',
+  groupIschemia: 'Ішемія / Інфаркт',
+  groupStemiSub: 'STEMI за локалізацією',
+  groupArrhythmia: 'Аритмії',
+  groupBlocks: 'Блокади / Метаболізм',
+  groupOther: 'Провідність / Інше',
+  groupPace: 'Кардіостимулятори',
+  btnNormal: 'Нормальний ритм',
+  btnLvh: 'Гіпертрофія ЛШ',
+  btnPe: 'ТЕЛА',
+  btnNstemi: 'NSTEMI / НС',
+  btnInfarct: 'Постінфарктний (Q)',
+  btnStemiInf: 'STEMI - Нижній',
+  btnStemiAnt: 'STEMI - Передній',
+  btnStemiLat: 'STEMI - Бічний',
+  btnStemiPost: 'STEMI - Задній ',
+  btnStemiRv:  'STEMI - Правий шлуночок ',
+  btnAfib: 'Фібриляція передсердь',
+  btnPvc: 'Екстрасистола (ШЕ)',
+  btnVt: 'Шлуночкова тахікардія',
+  btnAvblock: 'Повна АВ-блокада',
+  btnLbbb: 'Блокада ЛНПГ',
+  btnHyperk: 'Гіперкаліємія',
+  btnMobitz1: 'АВ-блокада II ст. Мобітц I',
+  btnMobitz2: 'АВ-блокада II ст. Мобітц II',
+  btnWpw: 'WPW-синдром',
+  btnSinusArr: 'Синусова аритмія',
+  btnPericarditis: 'Гострий перикардит',
+  btnVvi: 'VVI - Шлуночкова',
+  btnAai: 'AAI - Передсердна',
+  btnDdd: 'DDD - Двокамерна',
+  btnCrt: 'CRT - Трикамерна',
+  quizTitle: 'Режим іспиту',
+  quizScore: (c,t) => `Рахунок: ${c}/${t} правильно`,
+  quizInstruct: '<b>Визначте ритм.</b> Використовуйте паузу та циркуль для аналізу.',
+  quizNext: 'Наступне питання',
+  quizExit: '× Вийти з іспиту',
+  quizCorrect: (title,text) => `<b>Правильно!</b> ${title} - ${text}.`,
+  quizWrong: (title,text) => `<b>Неправильно.</b> Правильна відповідь: <b>${title}</b>. ${text}.`,
+  stripTitle: ' Стрічка 12 відведень',
+  stripScale: '25 мм/с · 10 мм/мВ',
+  stripSave: 'Зберегти PNG',
+  stripClose: 'Закрити',
+  stripRhythm: 'II - ритмова смуга',
+  stripFooter: 'ЕКГ-симулятор · Завіднюк В.Ю.',
+  patchTitle: 'Оновлення 0.8.1',
+  patchNew: 'Що нового у версії 0.8.1:',
+  patchItems: [
+   '<b>Мобільна верстка:</b> монітор ЕКГ, ЧСС і опис стану тепер одразу під шапкою - більше не треба гортати повз усі кнопки, щоб побачити ритм.',
+   '<b>Вибір стану - акордеон:</b> групи кнопок згортаються/розгортаються тапом; на телефоні за замовчуванням розгорнута лише перша група.',
+   '<b>Виправлено баг верстки:</b> групи кнопок помилково ховались і на комп\'ютері теж - тепер за замовчуванням усі відкриті на десктопі, згортаються лише на вузьких екранах.',
+   '<b>Помітніші заголовки груп:</b> тепер це виразна плашка зі стрілкою, а не дрібний сірий текст.',
+  ],
+  patchClose: 'Зрозуміло, почати роботу',
+  caliperMs: (ms,comment) => `↔ ${ms} мс${comment}`,
+  caliperMv: mv => `↕ Ампл: ${mv} мВ`,
+  caliperNorm: ' норма', caliperBorder: ' межа', caliperProlonged: ' подовж.',
+  instruction: '<b>Підказка:</b> Під час паузи клікніть на будь-який елемент ЕКГ для анатомічної довідки.',
+  footerVersion: 'Версія 0.8.1 · 2026',
+ },
+ en: {
+  appTitle: 'ECG Simulator 0.8.1',
+  langBtn: 'UA',
+  examBtn: 'Exam Mode',
+  stripBtn: '12-Lead Strip',
+  caliperOn: ' Calipers: ON',
+  caliperOff: 'Calipers: OFF',
+  pauseBtn: 'Pause',
+  resumeBtn: 'Resume',
+  leadSubtitle: l => `Lead ${l} | 25 mm/s · 10 mm/mV`,
+  canvasLead: l => `Lead ${l}`,
+  hrLabel: 'HR:',
+  hrUnit: 'bpm',
+  leadPanelTitle: 'Lead',
+  groupBasic: 'Basic Rhythms',
+  groupIschemia: 'Ischemia / Infarction',
+  groupStemiSub: 'STEMI by Location',
+  groupArrhythmia: 'Arrhythmias',
+  groupBlocks: 'Blocks / Metabolic',
+  groupOther: 'Conduction / Other',
+  groupPace: 'Pacemakers',
+  btnNormal: 'Normal Sinus Rhythm',
+  btnLvh: 'LV Hypertrophy',
+  btnPe: 'Pulmonary Embolism',
+  btnNstemi: 'NSTEMI / UA',
+  btnInfarct: 'Post-MI (Q waves)',
+  btnStemiInf: 'STEMI - Inferior',
+  btnStemiAnt: 'STEMI - Anterior',
+  btnStemiLat: 'STEMI - Lateral',
+  btnStemiPost: 'STEMI - Posterior ',
+  btnStemiRv:  'STEMI - Right Ventricle ',
+  btnAfib: 'Atrial Fibrillation',
+  btnPvc: 'PVC / Bigeminy',
+  btnVt: 'Ventricular Tachycardia',
+  btnAvblock: 'Complete AV Block',
+  btnLbbb: 'LBBB',
+  btnHyperk: 'Hyperkalemia',
+  btnMobitz1: '2nd Degree AV Block - Mobitz I',
+  btnMobitz2: '2nd Degree AV Block - Mobitz II',
+  btnWpw: 'WPW Syndrome',
+  btnSinusArr: 'Sinus Arrhythmia',
+  btnPericarditis: 'Acute Pericarditis',
+  btnVvi: 'VVI - Ventricular',
+  btnAai: 'AAI - Atrial',
+  btnDdd: 'DDD - Dual Chamber',
+  btnCrt: 'CRT - Biventricular',
+  quizTitle: 'Exam Mode',
+  quizScore: (c,t) => `Score: ${c}/${t} correct`,
+  quizInstruct: '<b>Identify the rhythm.</b> Use pause and calipers to analyze.',
+  quizNext: 'Next question',
+  quizExit: '× Exit exam',
+  quizCorrect: (title,text) => `<b>Correct!</b> ${title} - ${text}.`,
+  quizWrong: (title,text) => `<b>Incorrect.</b> Correct answer: <b>${title}</b>. ${text}.`,
+  stripTitle: ' 12-Lead ECG Strip',
+  stripScale: '25 mm/s · 10 mm/mV',
+  stripSave: 'Save PNG',
+  stripClose: 'Close',
+  stripRhythm: 'II - rhythm strip',
+  stripFooter: 'ECG Simulator · Zavidnyuk V.Yu.',
+  patchTitle: 'Update 0.8.1',
+  patchNew: "What's new in 0.8.1:",
+  patchItems: [
+   '<b>Mobile layout:</b> the ECG monitor, HR control, and state description now sit right below the header - no more scrolling past every button to see the rhythm.',
+   '<b>State picker - accordion:</b> button groups now collapse/expand on tap; on phones only the first group is expanded by default.',
+   '<b>Fixed a layout bug:</b> groups were incorrectly hidden on desktop too - now all groups are open by default on desktop and only collapse on narrow screens.',
+   '<b>More visible group headers:</b> now a distinct bar with an arrow, instead of small gray text.',
+  ],
+  patchClose: 'Got it, start',
+  caliperMs: (ms,comment) => `↔ ${ms} ms${comment}`,
+  caliperMv: mv => `↕ Ampl: ${mv} mV`,
+  caliperNorm: ' normal', caliperBorder: ' borderline', caliperProlonged: ' prolonged',
+  instruction: '<b>Tip:</b> While paused, click any ECG element for an anatomy reference.',
+  footerVersion: 'Version 0.8.1 · 2026',
+ },
+};
+
+function t() { return i18n[currentLang]; }
+
+function applyLang() {
+ const L = t();
+ document.title = L.appTitle;
+ document.querySelector('h1').textContent = L.appTitle;
+ document.getElementById('langBtn').textContent = L.langBtn;
+ document.getElementById('examBtn').textContent = L.examBtn;
+ document.getElementById('stripBtn').textContent = L.stripBtn;
+ const cb = document.getElementById('caliperBtn');
+ cb.innerHTML = isCaliperActive ? L.caliperOn : L.caliperOff;
+ const pb = document.getElementById('pauseBtn');
+ if (pb) pb.innerHTML = isPaused ? L.resumeBtn : L.pauseBtn;
+ document.getElementById('leadSubtitle').textContent = L.leadSubtitle(currentLead);
+ document.getElementById('canvasLeadName').textContent = L.canvasLead(currentLead);
+ document.getElementById('hrDisplay').textContent = currentHR + ' ' + L.hrUnit;
+ // Кнопки
+ const btns = {
+  'btn-normal':L.btnNormal,'btn-lvh':L.btnLvh,'btn-pe':L.btnPe,
+  'btn-nstemi':L.btnNstemi,'btn-infarct':L.btnInfarct,
+  'btn-stemi_inf':L.btnStemiInf,'btn-stemi_ant':L.btnStemiAnt,
+  'btn-stemi_lat':L.btnStemiLat,'btn-stemi_post':L.btnStemiPost,'btn-stemi_rv':L.btnStemiRv,
+  'btn-afib':L.btnAfib,'btn-pvc':L.btnPvc,'btn-vt':L.btnVt,
+  'btn-avblock':L.btnAvblock,'btn-lbbb':L.btnLbbb,'btn-hyperk':L.btnHyperk,
+  'btn-mobitz1':L.btnMobitz1,'btn-mobitz2':L.btnMobitz2,'btn-wpw':L.btnWpw,
+  'btn-sinusarr':L.btnSinusArr,'btn-pericarditis':L.btnPericarditis,
+  'btn-vvi':L.btnVvi,'btn-aai':L.btnAai,'btn-ddd':L.btnDdd,'btn-crt':L.btnCrt,
+ };
+ Object.entries(btns).forEach(([id,text])=>{ const el=document.getElementById(id); if(el) el.textContent=text; });
+ // Групи
+ const groups = document.querySelectorAll('.control-group-title');
+ const groupNames = [L.groupBasic, L.groupIschemia, L.groupStemiSub, L.groupArrhythmia, L.groupBlocks, L.groupOther, L.groupPace];
+ groups.forEach((el,i)=>{ if(groupNames[i]) el.textContent=groupNames[i]; });
+ // Lead panel
+ const lpt = document.querySelector('.lead-panel-title');
+ if (lpt) lpt.textContent = L.leadPanelTitle;
+ // HR label
+ const hl = document.getElementById('hrLabel');
+ if (hl) hl.textContent = L.hrLabel;
+ // Instruction
+ const it = document.getElementById('instructionText');
+ if (it) it.innerHTML = L.instruction;
+ // Footer version
+ const fv = document.getElementById('footerVersion');
+ if (fv) fv.textContent = L.footerVersion;
+ // Canvas scale (static but translate)
+ const csi = document.querySelector('.canvas-scale-info');
+ if (csi) csi.textContent = currentLang==='ua' ? '25 мм/с · 10 мм/мВ' : '25 mm/s · 10 mm/mV';
+ // Strip rhythm label
+ const srl = document.querySelector('.strip-rhythm-label');
+ if (srl) srl.textContent = L.stripRhythm;
+ // Strip save/close buttons
+ const ssb = document.querySelector('.strip-save-btn');
+ if (ssb) ssb.textContent = L.stripSave;
+ const scb = document.querySelector('.strip-close-btn');
+ if (scb) scb.textContent = L.stripClose;
+ const sscale = document.querySelector('#stripModal .strip-top-bar div div:nth-child(2)');
+ if (sscale) sscale.textContent = L.stripScale;
+ // Patch modal
+ document.querySelector('.modal-header').textContent = L.patchTitle;
+ const mb = document.querySelector('.modal-body');
+ if (mb) {
+  mb.querySelector('p').textContent = L.patchNew;
+  const lis = mb.querySelectorAll('li');
+  L.patchItems.forEach((txt,i)=>{ if(lis[i]) lis[i].innerHTML=txt; });
+  mb.querySelector('.modal-close-btn').textContent = L.patchClose;
+ }
+ // оновити infoBox якщо не в іспиті
+ if (!isExamMode) updateInfoBox(currentMode);
+}
+
+function toggleLang() {
+ currentLang = currentLang === 'ua' ? 'en' : 'ua';
+ applyLang();
+}
+
+// ДАНІ ПАТОЛОГІЙ 
+const ecgData = {
+ ua: {
+  normal : { hr:75, badge:'Базовий ритм', badgeClass:'', title:'Правильний синусовий ритм', text:'Фізіологічна норма. Реєструється правильний синусовий ритм. Використовуйте повзунок ЧСС для імітації синусової тахікардії або брадикардії.' },
+  lvh : { hr:65, badge:'Гіпертрофія', badgeClass:'warning', title:'Гіпертрофія міокарда лівого шлуночка', text:'Збільшення амплітуди QRS (високий R у V5–V6), косонизхідна депресія ST та асиметрична інверсія T у лівих відведеннях. Глибокий S у V1–V2.' },
+  pe : { hr:115, badge:'Невідкладний стан', badgeClass:'danger', title:'Гостре легеневе серце (ТЕЛА)', text:'Синусова тахікардія, P-pulmonale. Класичний S1Q3T3: зубець S у I, патологічний Q та інверсія T у III/aVF. Неповна блокада правої ніжки (rsRʼ у V1).' },
+  stemi_inf: { hr:85, badge:'STEMI · Нижній', badgeClass:'danger', title:'STEMI - Нижній (інферіорний) ІМ', text:'Оклюзія ПКА або ОВ (домінантна). Пряма елевація ST у II, III, aVF з максимумом у III. Реципрокна депресія ST у I та aVL - ключова ознака нижнього ІМ. Важливо: завжди перевіряйте V3R/V4R для виключення ІМ правого шлуночка.' },
+  stemi_ant: { hr:88, badge:'STEMI · Передній', badgeClass:'danger', title:'STEMI - Передній (антеріорний) ІМ', text:'Оклюзія ПМША (ПНА). Елевація ST та формування QS-комплексів у V1–V4. Реципрокна депресія ST у II, III, aVF. Передній ІМ - найбільша зона ураження, висока летальність через дисфункцію ЛШ.' },
+  stemi_lat: { hr:85, badge:'STEMI · Бічний', badgeClass:'danger', title:'STEMI - Бічний (латеральний) ІМ', text:'Оклюзія ОВ або діагональної гілки ПМША. Елевація ST у I, aVL, V5–V6. Реципрокна депресія ST у II, III, aVF та V1. Ізольований бічний ІМ рідкісний - частіше поєднується з переднім.' },
+  stemi_post: { hr:82, badge:'STEMI · Задній ', badgeClass:'danger', title:'STEMI - Задній (постеріорний) ІМ', text:' Найчастіше пропускають! Немає прямої елевації ST у стандартних відведеннях. Шукайте дзеркальну картину у V1-V3: горизонтальна депресія ST + домінантний R (>S) + позитивний T - це «відзеркалена» елевація задньої стінки. Часто супроводжує нижній ІМ. Для підтвердження - відведення V7-V9.' },
+  stemi_rv:   { hr:80, badge:'STEMI · Правий шлуночок ', badgeClass:'danger', title:'STEMI - Інфаркт правого шлуночка', text:'Оклюзія проксимального відділу ПКА. Картина нижнього ІМ (елевація II, III, aVF) + елевація ST у V1 замість реципрокної депресії. Ознаки: ST III > ST II; елевація V1 >= елевації II. Підтвердження - V4R (елевація >1 мм).' },
+  nstemi : { hr:80, badge:'Невідкладний стан', badgeClass:'danger', title:'Гострий коронарний синдром (NSTEMI)', text:'Горизонтальна або косонизхідна депресія ST та глибокий негативний симетричний T - переважно у V4–V6, I, aVL. Без патологічного Q.' },
+  infarct: { hr:70, badge:'Рубцеві зміни', badgeClass:'warning', title:'Постінфарктний кардіосклероз', text:'Патологічний Q (ширина >0.03 с, амплітуда >1/4 R). Виражений у нижніх відведеннях (II, III, aVF). Інверсія T в тих же зонах.' },
+  afib : { hr:110, badge:'Порушення ритму', badgeClass:'warning', title:'Фібриляція передсердь', text:'Відсутність зубців P, хвилі фібриляції (f), абсолютно неправильний ритм шлуночків. Повзунком можна змінювати середню частоту відповіді шлуночків.' },
+  pvc : { hr:75, badge:'Порушення ритму', badgeClass:'warning', title:'Шлуночкова екстрасистолія', text:'Передчасний широкий деформований QRS з повною компенсаторною паузою. Морфологія екстрасистоли змінюється залежно від відведення.' },
+  vt : { hr:155, badge:'Невідкладний стан', badgeClass:'danger', title:'Шлуночкова тахікардія (VT)', text:'Послідовність широких деформованих шлуночкових комплексів. P не диференціюються. Напрямок комплексів протилежний у грудних і кінцівкових відведеннях.' },
+  avblock: { hr:80, badge:'Блокада', badgeClass:'purple', title:'АВ-блокада III ступеня', text:'Повна АВ-дисоціація: P слухаються повзунка ЧСС, QRS б\'ються у фіксовано повільному ідіовентрикулярному ритмі (~35 уд/хв).' },
+  lbbb : { hr:70, badge:'Блокада', badgeClass:'purple', title:'Повна блокада лівої ніжки пучка Гіса', text:'QRS >0.12 с, широкий розщеплений R типу "М" у I, aVL, V5–V6. QS або rS у V1–V3. Дискордантні ST та T.' },
+  hyperk : { hr:75, badge:'Метаболізм', badgeClass:'purple', title:'Гіперкаліємія', text:'Вузькі симетрично загострені "наметоподібні" T - найбільш характерні у V2–V5. Малий або відсутній P. При тяжкій - розширення QRS.' },
+  mobitz1: { hr:75, badge:'АВ-блокада II', badgeClass:'purple', title:'АВ-блокада II ступеня, тип Мобітц I (Венкебах)', text:'Прогресивне подовження інтервалу PQ від комплексу до комплексу, аж поки один зубець P не проведеться на шлуночки (випадання QRS). Після паузи цикл повторюється з найкоротшого PQ. Зазвичай доброякісний перебіг, рівень блоку - АВ-вузол.' },
+  mobitz2: { hr:70, badge:'АВ-блокада II', badgeClass:'danger', title:'АВ-блокада II ступеня, тип Мобітц II', text:'Раптове випадання QRS без попереднього подовження PQ - інтервал PQ постійний (нормальний або дещо збільшений). Часто QRS розширений (блок нижче АВ-вузла, у системі Гіса-Пуркіньє). Небезпечний - високий ризик прогресії у повну АВ-блокаду, показання до кардіостимулятора.' },
+  wpw : { hr:80, badge:'Передзбудження', badgeClass:'warning', title:'Синдром WPW (Вольфа-Паркінсона-Уайта)', text:'Вкорочений інтервал PQ (<0.12 с) та дельта-хвиля - сповільнений, похилий початок QRS через проведення імпульсу додатковим (аномальним) шляхом (пучок Кента) в обхід АВ-вузла. QRS розширений. Може імітувати блокаду ніжки пучка Гіса або навіть інфаркт міокарда. Ризик - пароксизмальна тахікардія, при ФП - загроза фібриляції шлуночків.' },
+  sinusarr: { hr:70, badge:'Варіант норми', badgeClass:'', title:'Синусова (дихальна) аритмія', text:'Циклічні коливання частоти серцевих скорочень, пов\'язані з фазами дихання: ЧСС зростає на вдиху та зменшується на видиху. Морфологія P-QRS-T повністю нормальна, змінюється лише інтервал R-R. Фізіологічний варіант, найчастіше у дітей та молодих людей.' },
+  pericarditis: { hr:95, badge:'Запалення', badgeClass:'warning', title:'Гострий перикардит', text:'Дифузна, ввігнута (сідлоподібна) елевація ST практично в усіх відведеннях (без реципрокних змін, на відміну від STEMI) та депресія сегмента PR - найкраще видно у II, V5-V6. У aVR - навпаки, депресія ST та елевація PR. Ключова відмінність від STEMI - відсутність локальності та реципрокності.' },
+  vvi : { hr:70, badge:'Кардіостимулятор', badgeClass:'teal', title:'VVI - Однокамерна шлуночкова стимуляція', text:'Стимулятор збуджує лише шлуночок. Перед кожним QRS - вузький артефакт стимуляції (спайк). QRS широкий (>0.12 с), деформований за типом БЛНПГ, оскільки імпульс виходить з верхівки правого шлуночка. Зубці P відсутні або дисоційовані. Застосування: брадикардія при ФП, АВ-блокада.' },
+  aai : { hr:75, badge:'Кардіостимулятор', badgeClass:'teal', title:'AAI - Однокамерна передсердна стимуляція', text:'Стимулюється лише передсердя. Спайк передує зубцю P - він може бути дещо зміненої форми. Далі нормальне АВ-проведення → нормальний вузький QRS. Застосування: синдром слабкості синусового вузла за збереженої АВ-провідності.' },
+  ddd : { hr:70, badge:'Кардіостимулятор', badgeClass:'teal', title:'DDD - Двокамерна стимуляція', text:'Стимулятор сенсує та стимулює і передсердя, і шлуночок. Два спайки: перший передує P-хвилі (передсердний), другий - перед QRS (шлуночковий). QRS широкий як при БЛНПГ. Найбільш фізіологічний однокамерних. Застосування: повна АВ-блокада з нормальною функцією синусового вузла.' },
+  crt : { hr:65, badge:'Кардіостимулятор', badgeClass:'teal', title:'CRT - Трикамерна стимуляція (ресинхронізація)', text:'Бівентрикулярна стимуляція: правий та лівий шлуночок збуджуються одночасно, усуваючи міжшлуночкову диссинхронію. QRS стає вужчим, ніж при VVI/DDD. Передсердний спайк + P-хвиля, потім бівентрикулярний спайк + дещо ширший але синхронізований QRS. Застосування: серцева недостатність зі зниженою ФВ та широким QRS (БЛНПГ).' },
+ },
+ en: {
+  normal : { hr:75, badge:'Baseline', badgeClass:'', title:'Normal Sinus Rhythm', text:'Physiological baseline. Regular sinus rhythm. Use the HR slider to simulate sinus tachycardia or bradycardia.' },
+  lvh : { hr:65, badge:'Hypertrophy', badgeClass:'warning', title:'Left Ventricular Hypertrophy', text:'Increased QRS amplitude (tall R in V5–V6), downsloping ST depression, and asymmetric T-wave inversion in left-sided leads. Deep S in V1–V2.' },
+  pe : { hr:115, badge:'Emergency', badgeClass:'danger', title:'Acute Pulmonary Embolism', text:'Sinus tachycardia, P-pulmonale. Classic S1Q3T3: S wave in I, pathological Q and T inversion in III/aVF. Incomplete RBBB pattern (rsR′ in V1).' },
+  stemi_inf: { hr:85, badge:'STEMI · Inferior', badgeClass:'danger', title:'STEMI - Inferior MI', text:'Occlusion of RCA or dominant LCx. ST elevation in II, III, aVF, maximal in III. Reciprocal ST depression in I and aVL - key sign of inferior MI. Always check V3R/V4R to rule out right ventricular infarction.' },
+  stemi_ant: { hr:88, badge:'STEMI · Anterior', badgeClass:'danger', title:'STEMI - Anterior MI', text:'LAD occlusion. ST elevation and QS complexes in V1–V4. Reciprocal ST depression in II, III, aVF. Anterior MI carries the largest infarct territory and highest mortality due to LV dysfunction.' },
+  stemi_lat: { hr:85, badge:'STEMI · Lateral', badgeClass:'danger', title:'STEMI - Lateral MI', text:'Occlusion of LCx or diagonal branch of LAD. ST elevation in I, aVL, V5–V6. Reciprocal depression in II, III, aVF and V1. Isolated lateral MI is uncommon - usually combined with anterior.' },
+  stemi_post: { hr:82, badge:'STEMI · Posterior ', badgeClass:'danger', title:'STEMI - Posterior MI', text:' Most commonly missed STEMI! No direct ST elevation in standard leads. Look for the mirror pattern in V1-V3: horizontal ST depression + dominant R (>S) + upright T - this is "reflected" posterior wall elevation. Often accompanies inferior MI. Confirm with posterior leads V7-V9.' },
+  stemi_rv:   { hr:80, badge:'STEMI · Right Ventricle ', badgeClass:'danger', title:'STEMI - Right Ventricular Infarction', text:'Proximal RCA occlusion. Shows inferior MI pattern (ST elevation in II, III, aVF) + ST elevation in V1 instead of reciprocal depression. Key signs: ST in III > ST in II; V1 elevation >= lead II elevation. Confirm with V4R (elevation >1 mm).' },
+  nstemi : { hr:80, badge:'Emergency', badgeClass:'danger', title:'Acute Coronary Syndrome (NSTEMI)', text:'Horizontal or downsloping ST depression and deep symmetric T-wave inversion - predominantly in V4–V6, I, aVL. No pathological Q waves.' },
+  infarct: { hr:70, badge:'Scar', badgeClass:'warning', title:'Post-Infarction Cardiosclerosis', text:'Pathological Q wave (width >0.03 s, amplitude >1/4 R). Most prominent in inferior leads (II, III, aVF). T-wave inversion in the same distribution.' },
+  afib : { hr:110, badge:'Arrhythmia', badgeClass:'warning', title:'Atrial Fibrillation', text:'Absent P waves, fibrillation (f) waves, irregularly irregular ventricular response. Use the HR slider to adjust mean ventricular rate.' },
+  pvc : { hr:75, badge:'Arrhythmia', badgeClass:'warning', title:'Premature Ventricular Contractions', text:'Premature, wide, bizarre QRS with a full compensatory pause. Morphology changes by lead.' },
+  vt : { hr:155, badge:'Emergency', badgeClass:'danger', title:'Ventricular Tachycardia (VT)', text:'A run of wide, deformed ventricular complexes. P waves are not discernible. QRS axis is discordant in precordial vs limb leads.' },
+  avblock: { hr:80, badge:'Block', badgeClass:'purple', title:'Complete (3rd Degree) AV Block', text:'Complete AV dissociation: atrial rate follows the HR slider; ventricles beat at a fixed slow idioventricular rate (~35 bpm).' },
+  lbbb : { hr:70, badge:'Block', badgeClass:'purple', title:'Left Bundle Branch Block (LBBB)', text:'QRS >0.12 s, broad notched "M-shaped" R in I, aVL, V5–V6. QS or rS in V1–V3. Discordant ST and T.' },
+  hyperk : { hr:75, badge:'Metabolic', badgeClass:'purple', title:'Hyperkalemia', text:'Narrow, symmetric, peaked "tent-like" T waves - most prominent in V2–V5. Small or absent P. In severe cases - QRS widening.' },
+  mobitz1: { hr:75, badge:'AV Block II', badgeClass:'purple', title:'2nd Degree AV Block, Mobitz Type I (Wenckebach)', text:'Progressive PR interval lengthening beat-to-beat until one P wave fails to conduct (dropped QRS). The cycle then resets with the shortest PR. Usually benign, block level is at the AV node.' },
+  mobitz2: { hr:70, badge:'AV Block II', badgeClass:'danger', title:'2nd Degree AV Block, Mobitz Type II', text:'Sudden dropped QRS with no preceding PR prolongation - the PR interval stays constant (normal or slightly prolonged). QRS is often wide (block below the AV node, in the His-Purkinje system). Dangerous - high risk of progression to complete heart block; pacemaker indication.' },
+  wpw : { hr:80, badge:'Pre-excitation', badgeClass:'warning', title:'WPW Syndrome (Wolff-Parkinson-White)', text:'Short PR interval (<0.12 s) and a delta wave - a slurred, slow initial QRS upstroke caused by an accessory pathway (bundle of Kent) bypassing the AV node. QRS is widened. Can mimic bundle branch block or even myocardial infarction. Risk of paroxysmal tachycardia; if AF occurs, risk of ventricular fibrillation.' },
+  sinusarr: { hr:70, badge:'Normal Variant', badgeClass:'', title:'Sinus (Respiratory) Arrhythmia', text:'Cyclical variation in heart rate linked to the respiratory cycle: rate increases on inspiration and decreases on expiration. P-QRS-T morphology is entirely normal - only the R-R interval varies. A physiological variant, most common in children and young adults.' },
+  pericarditis: { hr:95, badge:'Inflammation', badgeClass:'warning', title:'Acute Pericarditis', text:'Diffuse, concave ("saddle-shaped") ST elevation in nearly all leads (without reciprocal changes, unlike STEMI) plus PR segment depression - best seen in II, V5-V6. In aVR, the opposite: ST depression and PR elevation. Key distinction from STEMI is the lack of localization and reciprocity.' },
+  vvi : { hr:70, badge:'Pacemaker', badgeClass:'teal', title:'VVI - Single-Chamber Ventricular Pacing', text:'Ventricle-only pacing. A narrow pacing spike precedes each QRS. The QRS is wide (>0.12 s), LBBB-shaped, as the impulse originates from the RV apex. P waves absent or dissociated. Indications: AF with bradycardia, AV block.' },
+  aai : { hr:75, badge:'Pacemaker', badgeClass:'teal', title:'AAI - Single-Chamber Atrial Pacing', text:'Atrium paced only. Spike precedes P wave (slightly altered morphology). Normal AV conduction follows → narrow QRS. Indications: sick sinus syndrome with intact AV conduction.' },
+  ddd : { hr:70, badge:'Pacemaker', badgeClass:'teal', title:'DDD - Dual-Chamber Pacing', text:'Senses and paces both chambers. Two spikes: atrial spike before P, ventricular spike before QRS. Wide QRS (LBBB-like). Most physiological of single-lead modes. Indications: complete AV block with normal sinus function.' },
+  crt : { hr:65, badge:'Pacemaker', badgeClass:'teal', title:'CRT - Cardiac Resynchronization Therapy', text:'Biventricular pacing: RV and LV stimulated simultaneously, eliminating interventricular dyssynchrony. QRS narrows vs VVI/DDD. Atrial spike + P, then biventricular spike + synchronized QRS. Indications: HFrEF with wide QRS (LBBB).' },
+ },
+};
+
+// АНАТОМІЧНІ ПІДКАЗКИ 
+const anatomyData = {
+ ua: {
+  P : { title:'Зубець P', text:'Деполяризація передсердь. Позитивний у I, II, aVF, V4–V6; негативний у aVR. Тривалість ≤0.10 с.' },
+  PQ : { title:'Сегмент PQ (PR)', text:'Час проведення через АВ-вузол. Норма: 0.12–0.20 с. Подовжений - АВ-блокада I ст.' },
+  Q : { title:'Зубець Q', text:'Деполяризація МШП. Патологічний (>0.03 с або >1/4 R) - ознака перенесеного інфаркту.' },
+  R : { title:'Зубець R', text:'Головна позитивна хвиля QRS. Відображає деполяризацію основної маси шлуночків.' },
+  S : { title:'Зубець S', text:'Кінцева деполяризація шлуночків (основи). Виражений S у V1–V3 при ГЛШ і ТЕЛА.' },
+  ST : { title:'Сегмент ST', text:'Плато деполяризації шлуночків. Зсув від ізолінії - ключова ознака ішемії або інфаркту міокарда.' },
+  T : { title:'Зубець T', text:'Реполяризація шлуночків. Інверсія - ішемія, перевантаження. Високий вузький T - гіперкаліємія.' },
+  TP : { title:'Ізолінія (сегмент TP)', text:'Електрична діастола серця. Скорочується першою при тахікардії.' },
+  f : { title:'Хвилі фібриляції (f)', text:'Хаотична активність передсердь при ФП. Замість P - дрібні нерегулярні коливання.' },
+  VT : { title:'Шлуночковий ектопічний', text:'Широкий аберантний комплекс. Походження з міокарда шлуночків, минаючи нормальну систему провідності.' },
+  PVC: { title:'Шлуночкова екстрасистола', text:'Передчасне скорочення. Після ШЕ - повна компенсаторна пауза.' },
+  QRS: { title:'QRS (ідіовентрикулярний)', text:'При повній АВ-блокаді - власний повільний ритм шлуночків (30–40 уд/хв), зазвичай розширений.' },
+  SPIKE_V : { title:'Шлуночковий спайк (артефакт)', text:'Вузький вертикальний імпульс стимулятора. Генерується при розряді електрода у шлуночку. Слідом - широкий деформований QRS.' },
+  SPIKE_A : { title:'Передсердний спайк (артефакт)', text:'Імпульс стимулятора, спрямований на передсердя. Слідом - P-хвиля (іноді змінена), потім нормальне АВ-проведення.' },
+  PACE_P : { title:'Стимульована P-хвиля', text:'Деполяризація передсердь, ініційована електродом стимулятора. Форма може відрізнятися від синусової P.' },
+  PACE_QRS: { title:'Стимульований QRS', text:'Широкий (>0.12 с) деформований комплекс. Виникає при шлуночковій стимуляції - імпульс поширюється поза нормальною системою провідності.' },
+ },
+ en: {
+  P : { title:'P Wave', text:'Atrial depolarization. Positive in I, II, aVF, V4–V6; negative in aVR. Duration ≤0.10 s.' },
+  PQ : { title:'PQ (PR) Interval', text:'AV nodal conduction time. Normal: 0.12–0.20 s. Prolonged = 1st degree AV block.' },
+  Q : { title:'Q Wave', text:'Septal depolarization. Pathological (>0.03 s or >1/4 R) = sign of prior infarction.' },
+  R : { title:'R Wave', text:'Main positive deflection of QRS. Reflects depolarization of the bulk of ventricular myocardium.' },
+  S : { title:'S Wave', text:'Terminal ventricular depolarization (basal). Prominent S in V1–V3 in LVH and PE.' },
+  ST : { title:'ST Segment', text:'Ventricular depolarization plateau. Displacement from isoelectric line - key sign of ischemia or MI.' },
+  T : { title:'T Wave', text:'Ventricular repolarization. Inversion - ischemia, overload. Tall narrow T - hyperkalemia.' },
+  TP : { title:'Isoelectric Line (TP segment)', text:'Electrical diastole. Shortens first during tachycardia.' },
+  f : { title:'Fibrillatory (f) Waves', text:'Chaotic atrial activity in AF. Instead of P waves - small, irregular oscillations.' },
+  VT : { title:'Ventricular Ectopic Beat', text:'Wide aberrant complex originating from ventricular myocardium, bypassing the normal conduction system.' },
+  PVC: { title:'Premature Ventricular Contraction', text:'Premature beat with full compensatory pause.' },
+  QRS: { title:'QRS (Idioventricular)', text:'In complete AV block - intrinsic slow ventricular rhythm (30–40 bpm), usually wide.' },
+  SPIKE_V : { title:'Ventricular Pacing Spike', text:'Narrow vertical pacemaker artifact. Generated by ventricular electrode discharge. Followed by wide, deformed QRS.' },
+  SPIKE_A : { title:'Atrial Pacing Spike', text:'Pacemaker impulse directed at atrium. Followed by P wave (may be altered), then normal AV conduction.' },
+  PACE_P : { title:'Paced P Wave', text:'Atrial depolarization initiated by pacemaker electrode. Morphology may differ from sinus P.' },
+  PACE_QRS: { title:'Paced QRS', text:'Wide (>0.12 s) deformed complex. Occurs with ventricular pacing - impulse spreads outside normal conduction system.' },
+ },
+};
+
+// КОЕФІЦІЄНТИ ВІДВЕДЕНЬ 
+// Кожен рядок: { p, qrs, t, st }
+// p, qrs, t - множники амплітуди (від'ємний = інвертований)
+// st - зсув ST у px (>0 депресія, <0 елевація)
+// Порядок: I II III aVR aVL aVF V1 V2 V3 V4 V5 V6
+const LC = {
+ normal: [{p:0.7,qrs:0.7, t:0.7, st:0 },{p:1.0, qrs:1.0, t:1.0, st:0 },{p:0.5,qrs:0.5, t:0.5, st:0 },{p:-0.8,qrs:-0.8, t:-0.8,st:0 },{p:0.3, qrs:0.3, t:0.3, st:0 },{p:0.9, qrs:0.85, t:0.85,st:0 },{p:-0.3,qrs:-0.9, t:-0.3,st:0 },{p:0.2, qrs:-0.5, t:0.4, st:0 },{p:0.4,qrs:0.3, t:0.6, st:0 },{p:0.5,qrs:0.9, t:0.9, st:0 },{p:0.5,qrs:1.1, t:0.9, st:0 },{p:0.5,qrs:0.9, t:0.7, st:0 }],
+ lvh: [{p:0.6,qrs:0.6, t:-0.5,st:10},{p:1.0, qrs:1.0, t:1.0, st:0 },{p:0.4,qrs:0.4, t:0.4, st:0 },{p:-0.7,qrs:-0.7, t:-0.7,st:0 },{p:0.5, qrs:0.5, t:-0.5,st:8 },{p:0.8, qrs:0.8, t:0.8, st:0 },{p:-0.2,qrs:-1.3, t:-0.4,st:0 },{p:0.2, qrs:-1.5, t:-0.5,st:0 },{p:0.4,qrs:0.2, t:0.3, st:0 },{p:0.5,qrs:1.2, t:0.7, st:0 },{p:0.5,qrs:1.6, t:-0.6,st:12},{p:0.5,qrs:1.4, t:-0.6,st:10}],
+ pe: [{p:0.7,qrs:-0.5, t:0.4, st:0 },{p:1.0, qrs:1.0, t:1.0, st:0 },{p:0.6,qrs:0.5, t:-0.7,st:5 },{p:-0.9,qrs:-0.7, t:-0.5,st:0 },{p:0.3, qrs:0.3, t:0.3, st:0 },{p:0.8, qrs:0.7, t:-0.7,st:5 },{p:0.3, qrs:-1.1, t:-0.5,st:0 },{p:0.3, qrs:-0.7, t:-0.4,st:0 },{p:0.4,qrs:0.3, t:-0.3,st:0 },{p:0.5,qrs:0.7, t:0.5, st:0 },{p:0.5,qrs:0.8, t:0.7, st:0 },{p:0.5,qrs:0.7, t:0.6, st:0 }],
+ // STEMI Нижній: елевація II, III, aVF; реципрокна депресія I, aVL, V1-V3
+ // Порядок: I II III aVR aVL aVF V1 V2 V3 V4 V5 V6
+ stemi_inf: [
+  {p:0.7,qrs:0.7, t:0.5, st:18 }, // I   - реципрокна депресія ST; T позитивний (норма)
+  {p:1.0,qrs:0.6, t:0.8, st:-50}, // II  - пряма елевація ★
+  {p:0.6,qrs:0.5, t:0.7, st:-55}, // III - пряма елевація ★ (найбільша)
+  {p:-0.8,qrs:-0.6,t:-0.5,st:0 }, // aVR - нейтральний
+  {p:0.4,qrs:0.4, t:0.4, st:20 }, // aVL - реципрокна депресія ST; T позитивний
+  {p:0.9,qrs:0.7, t:0.9, st:-48}, // aVF - пряма елевація ★
+  {p:-0.2,qrs:-0.7,t:0.3, st:15 },// V1  - реципрокна депресія
+  {p:0.2, qrs:-0.4,t:0.3, st:12 },// V2  - реципрокна депресія
+  {p:0.4, qrs:0.3, t:0.5, st:6  },// V3  - мінімальна реципрокна
+  {p:0.5, qrs:0.8, t:0.8, st:0  },// V4  - норма
+  {p:0.5, qrs:0.9, t:0.9, st:0  },// V5  - норма
+  {p:0.5, qrs:0.8, t:0.8, st:0  }, // V6  - норма
+ ],
+ // STEMI Передній: елевація V1–V4, Q у V1–V3; реципрокна депресія нижніх
+ // ВАЖЛИВО: QS-патерн вмикається явним прапорцем lc.qs, а не знаком qrs -
+ // бо aVR завжди фізіологічно від'ємний і теж підпав би під перевірку "qrs<0"
+ stemi_ant: [
+  {p:0.7,qrs:0.6, t:0.5, st:0  }, // I   - норма/слабка елевація
+  {p:1.0,qrs:0.8, t:0.8, st:8  }, // II  - реципрокна депресія
+  {p:0.5,qrs:0.5, t:0.5, st:10 }, // III - реципрокна депресія
+  {p:-0.8,qrs:-0.5,t:-0.4,st:0 }, // aVR - нейтральний
+  {p:0.4,qrs:0.5, t:0.4, st:0  }, // aVL - слабка елевація
+  {p:0.8,qrs:0.7, t:0.7, st:10 }, // aVF - реципрокна депресія
+  {p:-0.1,qrs:-1.1,t:0.5, st:-50, qs:true},// V1  - елевація, QS-комплекс ★
+  {p:0.1, qrs:-0.9,t:0.6, st:-55, qs:true},// V2  - елевація, QS ★
+  {p:0.3, qrs:-0.5,t:0.7, st:-50, qs:true},// V3  - елевація, QS ★
+  {p:0.5, qrs:0.4, t:0.8, st:-40},// V4  - елевація ★
+  {p:0.5, qrs:0.9, t:0.8, st:5  },// V5  - норма/реципрокна
+  {p:0.5, qrs:0.8, t:0.7, st:5  }, // V6  - норма/реципрокна
+ ],
+ // STEMI Бічний: елевація I, aVL, V5–V6; реципрокна депресія нижніх + V1
+ stemi_lat: [
+  {p:0.7,qrs:0.7, t:0.8, st:-45}, // I   - пряма елевація ★
+  {p:1.0,qrs:0.8, t:0.8, st:10 }, // II  - реципрокна депресія
+  {p:0.5,qrs:0.5, t:0.5, st:15 }, // III - реципрокна депресія
+  {p:-0.8,qrs:-0.6,t:-0.5,st:0 }, // aVR - нейтральний
+  {p:0.5, qrs:0.6, t:0.7, st:-48},// aVL - пряма елевація ★
+  {p:0.8, qrs:0.7, t:0.7, st:12 },// aVF - реципрокна депресія
+  {p:-0.2,qrs:-0.8,t:0.3, st:12 },// V1  - реципрокна депресія
+  {p:0.2, qrs:-0.4,t:0.3, st:8  },// V2  - реципрокна депресія
+  {p:0.4, qrs:0.4, t:0.5, st:0  },// V3  - нейтральний
+  {p:0.5, qrs:0.8, t:0.7, st:0  },// V4  - нейтральний
+  {p:0.5, qrs:0.9, t:0.8, st:-42},// V5  - пряма елевація ★
+  {p:0.5, qrs:0.9, t:0.8, st:-48}, // V6  - пряма елевація ★
+ ],
+ // STEMI Задній (задньобазальний): НЕ МАЄ прямої елевації у 12 стандартних відведеннях!
+ // Ключ - дзеркальна картина у V1-V3: депресія ST + домінантний R + позитивний T
+ // ВАЖЛИВО: "дзеркальна" морфологія вмикається явним прапорцем lc.post, а не порогом
+ // амплітуди qrs - бо qrs≈0.9 трапляється й у "нормальних" відведеннях (II, aVF, V5)
+ stemi_post: [
+  {p:0.7,qrs:0.7, t:0.6, st:0  }, // I   - норма
+  {p:1.0,qrs:0.9, t:0.9, st:0  }, // II  - норма
+  {p:0.6,qrs:0.7, t:0.7, st:0  }, // III - норма (чистий задній без нижнього компонента)
+  {p:-0.8,qrs:-0.7,t:-0.6,st:0 }, // aVR - нейтральний
+  {p:0.3, qrs:0.3, t:0.3, st:0  }, // aVL - нейтральний
+  {p:0.9, qrs:0.9, t:0.9, st:0  }, // aVF - норма
+  {p:-0.2,qrs:1.4, t:1.5, st:28, post:true }, // V1  - домінантний R, депресія ST, +T ★★★
+  {p:0.2, qrs:1.2, t:1.4, st:32, post:true }, // V2  - домінантний R, депресія ST ★★★
+  {p:0.3, qrs:0.9, t:1.1, st:25, post:true }, // V3  - підвищений R, депресія ST ★★
+  {p:0.5, qrs:0.8, t:0.9, st:5  }, // V4  - перехідна зона
+  {p:0.5, qrs:0.9, t:0.8, st:0  }, // V5  - норма
+  {p:0.5, qrs:0.8, t:0.7, st:0  }, // V6  - норма
+ ],
+ // STEMI Правого шлуночка: оклюзія проксимального відділу ПКА
+ // Картина нижнього ІМ (II, III, aVF) + елевація ST у V1 замість реципрокної депресії
+ // Ключова ознака: ST у III > ST у II; елевація V1 >= елевації II
+ // Клінічна пастка: протипоказані нітрати та діуретики!
+ stemi_rv: [
+  {p:0.7,qrs:0.7, t:0.5, st:18 }, // I   - реципрокна депресія ST
+  {p:1.0,qrs:0.6, t:0.8, st:-42}, // II  - пряма елевація (менша ніж III) ★
+  {p:0.6,qrs:0.5, t:0.7, st:-58}, // III - пряма елевація ★ (найбільша, III > II)
+  {p:-0.8,qrs:-0.6,t:-0.5,st:0 }, // aVR - нейтральний
+  {p:0.4,qrs:0.4, t:0.4, st:20 }, // aVL - реципрокна депресія ST
+  {p:0.9,qrs:0.7, t:0.9, st:-45}, // aVF - пряма елевація ★
+  {p:-0.2,qrs:-0.5,t:0.4, st:-42}, // V1  - ЕЛЕВАЦІЯ ST (ознака ПШ!) ★★★
+  {p:0.2, qrs:-0.4,t:0.3, st:6  }, // V2  - ізолінія або мінімальна депресія
+  {p:0.4, qrs:0.3, t:0.5, st:4  }, // V3  - мінімальна зміна
+  {p:0.5, qrs:0.8, t:0.8, st:0  }, // V4  - норма
+  {p:0.5, qrs:0.9, t:0.9, st:0  }, // V5  - норма
+  {p:0.5, qrs:0.8, t:0.8, st:0  }, // V6  - норма
+ ],
+ nstemi: [{p:0.7,qrs:0.7, t:-0.6,st:14},{p:1.0, qrs:1.0, t:1.0, st:0 },{p:0.4,qrs:0.4, t:0.4, st:0 },{p:-0.7,qrs:-0.7, t:-0.5,st:0 },{p:0.4, qrs:0.4, t:-0.5,st:10},{p:0.8, qrs:0.8, t:0.5, st:5 },{p:-0.2,qrs:-0.5, t:-0.3,st:0 },{p:0.2, qrs:-0.3, t:-0.4,st:8 },{p:0.4,qrs:0.5, t:-0.5,st:14},{p:0.5,qrs:0.9, t:-0.7,st:18},{p:0.5,qrs:1.0, t:-0.7,st:16},{p:0.5,qrs:0.8, t:-0.5,st:12}],
+ infarct: [{p:0.7,qrs:0.6, t:-0.4,st:0 },{p:1.0, qrs:1.0, t:1.0, st:0 },{p:0.6,qrs:0.9, t:-0.5,st:0 },{p:-0.7,qrs:-0.7, t:-0.5,st:0 },{p:0.4, qrs:0.4, t:-0.4,st:0 },{p:0.9, qrs:0.9, t:-0.4,st:0 },{p:-0.2,qrs:-0.5, t:-0.3,st:0 },{p:0.2, qrs:-0.3, t:0.3, st:0 },{p:0.4,qrs:0.5, t:0.5, st:0 },{p:0.5,qrs:0.8, t:0.7, st:0 },{p:0.5,qrs:0.9, t:0.8, st:0 },{p:0.5,qrs:0.8, t:0.7, st:0 }],
+ afib: [{p:0.0,qrs:0.7, t:0.7, st:0 },{p:0.0, qrs:1.0, t:1.0, st:0 },{p:0.0,qrs:0.5, t:0.5, st:0 },{p:0.0, qrs:-0.8, t:-0.7,st:0 },{p:0.0, qrs:0.3, t:0.3, st:0 },{p:0.0, qrs:0.8, t:0.8, st:0 },{p:0.0, qrs:-0.7, t:-0.3,st:0 },{p:0.0, qrs:-0.4, t:0.3, st:0 },{p:0.0,qrs:0.3, t:0.5, st:0 },{p:0.0,qrs:0.9, t:0.8, st:0 },{p:0.0,qrs:1.0, t:0.9, st:0 },{p:0.0,qrs:0.8, t:0.7, st:0 }],
+ pvc: [{p:0.7,qrs:0.7, t:0.7, st:0 },{p:1.0, qrs:1.0, t:1.0, st:0 },{p:0.5,qrs:0.5, t:0.5, st:0 },{p:-0.8,qrs:-0.8, t:-0.7,st:0 },{p:0.3, qrs:0.3, t:0.3, st:0 },{p:0.9, qrs:0.9, t:0.8, st:0 },{p:-0.2,qrs:-1.1, t:-0.6,st:0 },{p:0.2, qrs:-0.8, t:-0.5,st:0 },{p:0.4,qrs:0.4, t:0.5, st:0 },{p:0.5,qrs:1.0, t:0.9, st:0 },{p:0.5,qrs:1.1, t:1.0, st:0 },{p:0.5,qrs:0.9, t:0.8, st:0 }],
+ vt: [{p:0.0,qrs:0.8, t:0.7, st:0 },{p:0.0, qrs:1.0, t:1.0, st:0 },{p:0.0,qrs:0.6, t:0.6, st:0 },{p:0.0, qrs:-0.9, t:-0.8,st:0 },{p:0.0, qrs:0.4, t:0.4, st:0 },{p:0.0, qrs:0.8, t:0.7, st:0 },{p:0.0, qrs:-1.1, t:-0.8,st:0 },{p:0.0, qrs:-0.9, t:-0.7,st:0 },{p:0.0,qrs:-0.5, t:-0.4,st:0 },{p:0.0,qrs:0.5, t:0.5, st:0 },{p:0.0,qrs:0.9, t:0.8, st:0 },{p:0.0,qrs:1.0, t:0.9, st:0 }],
+ avblock: [{p:0.7,qrs:0.6, t:0.6, st:0 },{p:1.0, qrs:1.0, t:1.0, st:0 },{p:0.5,qrs:0.5, t:0.5, st:0 },{p:-0.8,qrs:-0.8, t:-0.8,st:0 },{p:0.3, qrs:0.3, t:0.3, st:0 },{p:0.9, qrs:0.9, t:0.9, st:0 },{p:-0.2,qrs:-0.9, t:-0.4,st:0 },{p:0.2, qrs:-0.5, t:0.3, st:0 },{p:0.4,qrs:0.4, t:0.5, st:0 },{p:0.5,qrs:0.9, t:0.8, st:0 },{p:0.5,qrs:1.0, t:0.9, st:0 },{p:0.5,qrs:0.9, t:0.8, st:0 }],
+ lbbb: [{p:0.7,qrs:0.9, t:-0.9,st:14},{p:1.0, qrs:1.0, t:1.0, st:0 },{p:0.4,qrs:-0.5, t:0.5, st:-8},{p:-0.8,qrs:-0.7, t:-0.7,st:0 },{p:0.5, qrs:0.8, t:-0.8,st:12},{p:0.8, qrs:-0.4, t:0.5, st:-6},{p:-0.1,qrs:-1.2, t:0.7, st:-10},{p:0.1,qrs:-1.1, t:0.6, st:-8},{p:0.3,qrs:-0.5, t:0.4, st:-5},{p:0.5,qrs:0.6, t:-0.5,st:8 },{p:0.5,qrs:1.1, t:-0.9,st:14},{p:0.5,qrs:1.0, t:-0.8,st:12}],
+ hyperk: [{p:0.4,qrs:0.7, t:0.7, st:0 },{p:0.5, qrs:1.0, t:1.0, st:0 },{p:0.3,qrs:0.5, t:0.6, st:0 },{p:-0.4,qrs:-0.8, t:-0.8,st:0 },{p:0.2, qrs:0.3, t:0.4, st:0 },{p:0.4, qrs:0.7, t:0.8, st:0 },{p:-0.1,qrs:-0.6, t:0.7, st:0 },{p:0.1, qrs:-0.4, t:1.3, st:0 },{p:0.3,qrs:0.4, t:1.5, st:0 },{p:0.4,qrs:0.8, t:1.4, st:0 },{p:0.4,qrs:0.9, t:1.1, st:0 },{p:0.4,qrs:0.8, t:0.9, st:0 }],
+ // WPW: скорочений PQ + дельта-хвиля. Тип А (додатковий шлях лівосторонній) - домінантний R
+ // у V1 (може імітувати БПНПГ або задній ІМ - навмисно закладено як діагностична пастка)
+ // Порядок: I II III aVR aVL aVF V1 V2 V3 V4 V5 V6
+ wpw: [{p:0.7,qrs:0.7, t:0.6, st:0 },{p:1.0, qrs:0.9, t:0.8, st:0 },{p:0.5,qrs:0.5, t:0.5, st:0 },{p:-0.8,qrs:-0.7, t:-0.6,st:0 },{p:0.3, qrs:0.4, t:0.3, st:0 },{p:0.9, qrs:0.8, t:0.7, st:0 },{p:-0.3,qrs:0.8, t:-0.3,st:0 },{p:0.2, qrs:0.6, t:0.3, st:0 },{p:0.4,qrs:0.5, t:0.4, st:0 },{p:0.5,qrs:0.9, t:0.7, st:0 },{p:0.5,qrs:1.0, t:0.6, st:0 },{p:0.5,qrs:0.9, t:0.5, st:0 }],
+ // Перикардит: дифузна елевація ST майже в усіх відведеннях, реципрокна депресія лише в aVR
+ // st: >0 депресія, <0 елевація (як і скрізь у файлі)
+ pericarditis: [{p:0.7,qrs:0.6, t:0.6, st:-18},{p:1.0, qrs:0.9, t:0.9, st:-20},{p:0.5,qrs:0.5, t:0.5, st:-15},{p:-0.8,qrs:-0.6, t:-0.6,st:22 },{p:0.3, qrs:0.3, t:0.3, st:-10},{p:0.8, qrs:0.7, t:0.7, st:-16},{p:-0.2,qrs:-0.5, t:0.2, st:-5 },{p:0.2, qrs:-0.3, t:0.4, st:-14},{p:0.4,qrs:0.4, t:0.5, st:-18},{p:0.5,qrs:0.8, t:0.6, st:-20},{p:0.5,qrs:0.9, t:0.6, st:-22},{p:0.5,qrs:0.8, t:0.6, st:-20}],
+ // Кардіостимулятори: qrs - ширина/напрямок стимульованого QRS, p - наявність P, spike_a/spike_v - наявність спайку
+ // Порядок: I II III aVR aVL aVF V1 V2 V3 V4 V5 V6
+ vvi: [{p:0,qrs:-0.8, t:0.7, st:0},{p:0, qrs:1.0, t:1.0, st:0},{p:0, qrs:0.6, t:0.6, st:0},{p:0, qrs:-0.7, t:-0.6,st:0},{p:0, qrs:-0.6, t:0.5, st:0},{p:0, qrs:0.8, t:0.8, st:0},{p:0, qrs:-1.1, t:0.8, st:0},{p:0, qrs:-0.9, t:0.7, st:0},{p:0,qrs:-0.5, t:0.5, st:0},{p:0,qrs:0.6, t:-0.5,st:0},{p:0,qrs:1.0, t:-0.8,st:0},{p:0,qrs:0.9, t:-0.7,st:0}],
+ aai: [{p:0.8,qrs:0.7,t:0.7, st:0},{p:1.0,qrs:1.0, t:1.0, st:0},{p:0.5,qrs:0.5, t:0.5, st:0},{p:-0.8,qrs:-0.8,t:-0.8,st:0},{p:0.3,qrs:0.3,t:0.3,st:0},{p:0.9,qrs:0.85,t:0.85,st:0},{p:-0.3,qrs:-0.9,t:-0.3,st:0},{p:0.2,qrs:-0.5,t:0.4,st:0},{p:0.4,qrs:0.3,t:0.6,st:0},{p:0.5,qrs:0.9,t:0.9,st:0},{p:0.5,qrs:1.1,t:0.9,st:0},{p:0.5,qrs:0.9,t:0.7,st:0}],
+ ddd: [{p:0.7,qrs:-0.8,t:0.7, st:0},{p:0.8,qrs:1.0, t:1.0, st:0},{p:0.4,qrs:0.6, t:0.6, st:0},{p:-0.7,qrs:-0.7,t:-0.6,st:0},{p:0.3,qrs:-0.6,t:0.5,st:0},{p:0.7,qrs:0.8, t:0.8, st:0},{p:-0.2,qrs:-1.1,t:0.8,st:0},{p:0.1,qrs:-0.9,t:0.7,st:0},{p:0.3,qrs:-0.5,t:0.5,st:0},{p:0.4,qrs:0.6,t:-0.5,st:0},{p:0.4,qrs:1.0,t:-0.8,st:0},{p:0.4,qrs:0.9,t:-0.7,st:0}],
+ crt: [{p:0.7,qrs:-0.6,t:0.6, st:0},{p:0.8,qrs:0.9, t:0.9, st:0},{p:0.4,qrs:0.5, t:0.5, st:0},{p:-0.7,qrs:-0.6,t:-0.5,st:0},{p:0.3,qrs:-0.5,t:0.4,st:0},{p:0.7,qrs:0.7, t:0.7, st:0},{p:-0.2,qrs:-0.8,t:0.6,st:0},{p:0.1,qrs:-0.6,t:0.5,st:0},{p:0.3,qrs:0.4, t:0.4, st:0},{p:0.4,qrs:0.7,t:-0.4,st:0},{p:0.4,qrs:0.9,t:-0.6,st:0},{p:0.4,qrs:0.8,t:-0.5,st:0}],
+};
+
+const LEAD_NAMES = ['I','II','III','aVR','aVL','aVF','V1','V2','V3','V4','V5','V6'];
+const LEAD_IDX = Object.fromEntries(LEAD_NAMES.map((n,i)=>[n,i]));
+
+// СТАН 
+let currentMode = 'normal';
+let currentLead = 'II';
+let currentHR = 75;
+let globalTime = 0;
+let renderX = 0;
+const SPEED = 2.3;
+const WIPE_W = 25;
+let prevY = baselineY;
+let animationId;
+let isPaused = false;
+let isExamMode = false;
+let afibTimer = 0, afibDrawing = false, afibCx = 0;
+// СТАН СТИМУЛЯТОРА 
+let pacePhase = 0; // фаза всередині циклу стимулятора (0..cycle)
+
+// МАТЕМАТИКА 
+function bump(x, s, w, h, sk=1) {
+ return (x>s && x<s+w) ? h*Math.sin(Math.PI*Math.pow((x-s)/w,sk)) : 0;
+}
+function sharp(x, s, w, h) {
+ const half=w/2;
+ if (x>=s && x<=s+half) return h*(x-s)/half;
+ if (x>s+half && x<=s+w) return h*(1-(x-s-half)/half);
+ return 0;
+}
+
+// БАЗОВИЙ КОМПЛЕКС 
+function getBaseComplex(mode, cx, lc) {
+ const {p, qrs:q, t, st} = lc;
+ let dy = 0;
+
+ if (['normal','pvc','afib','avblock'].includes(mode)) {
+ dy -= bump(cx,10,25,10*p);
+ dy += sharp(cx,48,4,4*Math.abs(q));
+ dy -= sharp(cx,52,8,80*q);
+ dy += sharp(cx,60,6,12*Math.abs(q));
+ if (st && cx>66 && cx<100) dy += st*bump(cx,66,34,1,0.5);
+ dy -= bump(cx,90,45,20*t,0.8);
+ } else if (mode==='lvh') {
+ dy -= bump(cx,10,25,10*p);
+ dy += sharp(cx,48,4,4*Math.abs(q));
+ dy -= sharp(cx,52,12,130*q);
+ dy += sharp(cx,64,10,40*Math.abs(q));
+ if (st && cx>64 && cx<155) dy += st*bump(cx,64,91,1,0.5);
+ dy += bump(cx,104,45,25*t,1.2);
+ } else if (mode==='pe') {
+ dy -= bump(cx,5,20,15*p);
+ dy += sharp(cx,38,4,4*Math.abs(q));
+ dy -= sharp(cx,42,8,40*q);
+ dy += sharp(cx,50,12,45*Math.abs(q));
+ if (st && cx>62 && cx<90) dy += st*bump(cx,62,28,1,0.5);
+ dy -= bump(cx,75,40,15*t,1);
+ } else if (mode==='stemi_inf' || mode==='stemi_lat' || mode==='stemi_rv') {
+ // Нижній та бічний STEMI - монофазна крива ST
+ dy -= bump(cx,10,25,10*p);
+ dy += sharp(cx,46,6,15*Math.abs(q));
+ dy -= sharp(cx,52,10,60*q);
+ if (cx>57 && cx<125) dy -= bump(cx,52,73,(50-st)*Math.sign(q||1),0.6);
+ } else if (mode==='stemi_ant') {
+ // Передній STEMI - QS-комплекс + виражена елевація
+ dy -= bump(cx,10,25,10*p);
+ if (lc.qs) {
+  // QS-патерн лише у відведеннях з явним прапорцем (V1-V3), не за знаком qrs -
+  // інакше сюди потрапляв би й фізіологічно від'ємний aVR
+  dy -= sharp(cx,46,20,90*q);
+  if (cx>60 && cx<130) dy -= bump(cx,52,78,(50-st)*Math.sign(q||1),0.55);
+ } else {
+  dy += sharp(cx,46,6,15*Math.abs(q));
+  dy -= sharp(cx,52,10,60*q);
+  if (st && cx>60 && cx<120) dy += st*bump(cx,60,60,1,0.5);
+ }
+ } else if (mode==='stemi_post') {
+ // Задній STEMI - у V1-V3 домінантний R + горизонтальна депресія ST (дзеркало)
+ // st > 0 означає депресію (вже закодовано у LC)
+ dy -= bump(cx,10,25,10*p);
+ if (lc.post) {
+  // Домінантний R лише у відведеннях з явним прапорцем (V1-V3), не за порогом
+  // амплітуди qrs - інакше сюди потрапляли б і "нормальні" II/aVF/V5 (qrs≈0.9)
+  dy -= sharp(cx,48,4,4*Math.abs(q));
+  dy += sharp(cx,52,8,75*q); // позитивний "R" домінантний
+  dy -= sharp(cx,60,5,10*Math.abs(q));
+  if (cx>66 && cx<100) dy += st; // горизонтальна депресія ST
+  dy -= bump(cx,92,40,20*t,0.85); // позитивний T
+ } else {
+  dy += sharp(cx,48,4,4*Math.abs(q));
+  dy -= sharp(cx,52,8,80*q);
+  dy += sharp(cx,60,6,12*Math.abs(q));
+  dy -= bump(cx,90,45,20*t,0.8);
+ }
+ } else if (mode==='nstemi') {
+ dy -= bump(cx,10,25,10*p);
+ dy += sharp(cx,48,4,4*Math.abs(q));
+ dy -= sharp(cx,52,10,70*q);
+ dy += sharp(cx,62,6,20*Math.abs(q));
+ if (cx>68 && cx<95) dy += st;
+ dy += bump(cx,95,40,30*t,1);
+ } else if (mode==='infarct') {
+ dy -= bump(cx,10,25,10*p);
+ dy += sharp(cx,45,16,45*q);
+ dy -= sharp(cx,61,8,25*q);
+ dy -= bump(cx,95,40,15*t,0.8);
+ } else if (mode==='lbbb') {
+ dy -= bump(cx,10,25,10*p);
+ dy -= sharp(cx,45,15,60*q);
+ dy -= sharp(cx,58,15,70*q);
+ if (st && cx>63 && cx<155) dy += st*bump(cx,63,92,1,0.5);
+ dy += bump(cx,110,50,25*t,1.2);
+ } else if (mode==='hyperk') {
+ dy -= bump(cx,10,25,3*p);
+ dy += sharp(cx,48,4,4*Math.abs(q));
+ dy -= sharp(cx,52,8,80*q);
+ dy += sharp(cx,60,6,12*Math.abs(q));
+ dy -= sharp(cx,85,30,65*t);
+ } else if (mode==='wpw') {
+ // WPW: короткий PQ + дельта-хвиля (повільний похилий початок QRS), розширений QRS
+ dy -= bump(cx,10,20,10*p);
+ dy += sharp(cx,32,12,16*Math.abs(q)); // дельта-хвиля - похилий підйом перед основним R
+ dy -= sharp(cx,44,10,72*q); // основний QRS
+ dy += sharp(cx,54,10,18*Math.abs(q));
+ dy -= bump(cx,88,40,18*t,0.85);
+ } else if (mode==='pericarditis') {
+ // Перикардит: дифузна ввігнута (не опукла, як STEMI) елевація ST майже скрізь
+ dy -= bump(cx,10,25,10*p);
+ dy += sharp(cx,48,4,4*Math.abs(q));
+ dy -= sharp(cx,52,8,70*q);
+ dy += sharp(cx,60,6,12*Math.abs(q));
+ if (cx>64 && cx<112) dy -= st*bump(cx,64,48,1,1.3);
+ dy -= bump(cx,102,35,18*t,0.9);
+ }
+ return dy;
+}
+
+function getLc() { return (LC[currentMode]||LC.normal)[LEAD_IDX[currentLead]]; }
+
+function getStdLabel(lx) {
+ if (lx>=8 && lx<36) return 'P';
+ if (lx>=36 && lx<48) return 'PQ';
+ if (lx>=48 && lx<52) return 'Q';
+ if (lx>=52 && lx<58) return 'R';
+ if (lx>=58 && lx<66) return 'S';
+ if (lx>=66 && lx<85) return 'ST';
+ if (lx>=85 && lx<140) return 'T';
+ return 'TP';
+}
+function getAfibLabel(cx) {
+ if (cx>=8 && cx<12) return 'Q';
+ if (cx>=12 && cx<18) return 'R';
+ if (cx>=18 && cx<26) return 'S';
+ if (cx>=26 && cx<40) return 'ST';
+ if (cx>=40 && cx<75) return 'T';
+ return 'f';
+}
+
+// ФУНКЦІЇ КАРДІОСТИМУЛЯТОРА 
+// Малює вертикальний спайк (артефакт) і повертає deflection Y
+function drawPaceSpike(rx, color) {
+ const sh = 55; // висота спайку у пікселях
+ ctx.save();
+ ctx.strokeStyle = color || '#1ab8ff';
+ ctx.lineWidth = 1.5;
+ ctx.beginPath();
+ ctx.moveTo(rx, baselineY + sh/2);
+ ctx.lineTo(rx, baselineY - sh/2);
+ ctx.stroke();
+ ctx.restore();
+}
+
+// Стимульований QRS - широкий, як БЛНПГ, але з підкресленим початком
+function pacedQRS(cx, lc, width) {
+ // width: 1.0 = стандартний (VVI/DDD), 0.8 = вужчий (CRT)
+ const w = width || 1.0;
+ let dy = 0;
+ // Широкий двохфазний комплекс з верхівки ПШ
+ dy -= sharp(cx, 0, Math.round(20*w), 70*lc.qrs);
+ dy -= sharp(cx, Math.round(20*w), Math.round(20*w), 65*lc.qrs);
+ dy -= bump(cx, Math.round(40*w), Math.round(55*w), 22*lc.t, 1.1);
+ return dy;
+}
+
+// Стимульована P-хвиля (трохи менша за синусову)
+function pacedP(cx, lc) {
+ return -bump(cx, 2, 20, 8*lc.p);
+}
+
+// ГОЛОВНИЙ ЦИКЛ 
+function drawMonitorFrame() {
+ ctx.clearRect(renderX, 0, WIPE_W, canvas.height);
+ let y=baselineY, label='TP';
+ const cycle=15000/currentHR, cx=globalTime%cycle, lc=getLc();
+
+ if (['normal','lvh','pe','stemi_inf','stemi_ant','stemi_lat','stemi_post','stemi_rv','nstemi','infarct','lbbb','hyperk','wpw','pericarditis'].includes(currentMode)) {
+ const lx = cycle<140 ? cx*(140/cycle) : cx;
+ y += getBaseComplex(currentMode, lx, lc);
+ label = getStdLabel(lx);
+ } else if (currentMode==='pvc') {
+ const pvcCycle = cycle * 1.9;
+ const px = globalTime % pvcCycle;
+ if (px < cycle * 0.85) {
+ const lx = cycle < 140 ? (px / (cycle * 0.85)) * 140 : px;
+ y += getBaseComplex('normal', lx, lc); label = getStdLabel(lx);
+ } else if (px < cycle * 0.85 + 150) {
+ const wx = px - cycle * 0.85;
+ y -= sharp(wx,0,25,110*lc.qrs);
+ y += sharp(wx,25,30,40*Math.abs(lc.qrs));
+ y += bump(wx,70,70,35*lc.t,1.2);
+ label = 'PVC';
+ } else { label = 'TP'; }
+ } else if (currentMode==='vt') {
+ const vtCx = globalTime % cycle;
+ const sg = Math.sign(lc.qrs || 1);
+ const QRS_W = cycle * 0.38, ST_W = cycle * 0.18;
+ const T_W = cycle * 0.22, T_OFF = QRS_W + ST_W;
+ if (vtCx < QRS_W) {
+ const q = vtCx / QRS_W;
+ const notch = Math.sin(q * Math.PI * 2.5) * 8 * Math.abs(lc.qrs);
+ y -= Math.sin(Math.PI * Math.pow(q, 0.6)) * 85 * lc.qrs + notch * sg;
+ } else if (vtCx < QRS_W + ST_W) {
+ y += 18 * lc.qrs * (1 - (vtCx - QRS_W) / ST_W);
+ } else if (vtCx < T_OFF + T_W) {
+ y += bump(vtCx - T_OFF, 0, T_W, 22 * lc.qrs, 0.9);
+ }
+ label='VT';
+ } else if (currentMode==='afib') {
+ const fRate = 4.5;
+ y+=(3*Math.sin(globalTime/fRate)+1.5*Math.sin(globalTime/fRate*1.7+0.8)+0.8*Math.sin(globalTime/fRate*2.3+1.4))*Math.abs(lc.qrs)*0.6;
+ if (afibTimer<=0 && !afibDrawing) { afibDrawing=true; afibCx=0; }
+ if (afibDrawing) {
+ y+=sharp(afibCx,8,4,4*Math.abs(lc.qrs));
+ y-=sharp(afibCx,12,8,80*lc.qrs);
+ y+=sharp(afibCx,20,6,12*Math.abs(lc.qrs));
+ y-=bump(afibCx,40,35,15*lc.t,0.8);
+ label=getAfibLabel(afibCx);
+ afibCx+=SPEED;
+ if (afibCx>80) { afibDrawing=false; afibTimer=cycle*(0.6+Math.random()*0.8); }
+ } else { afibTimer-=SPEED; label='f'; }
+ } else if (currentMode==='avblock') {
+ let pcx=globalTime%cycle; if (cycle<40) pcx*=(40/cycle);
+ y-=bump(pcx,10,25,12*lc.p);
+ const qc=15000/35, qcx=globalTime%qc;
+ y-=sharp(qcx,40,20,60*lc.qrs);
+ y+=sharp(qcx,60,20,40*Math.abs(lc.qrs));
+ y+=bump(qcx,100,70,25*lc.t,1.2);
+ if (qcx>=35 && qcx<48) label='Q';
+ else if (qcx>=48 && qcx<65) label='R';
+ else if (qcx>=65 && qcx<85) label='S';
+ else if (qcx>=85 && qcx<170) label='T';
+ else if (pcx>=5 && pcx<40) label='P';
+ else label='TP';
+
+ } else if (currentMode==='mobitz1') {
+ // Мобітц I (Венкебах): прогресивне подовження PQ у групі 4:3, потім випадання QRS
+ const groupLen = 4, groupPeriod = cycle*groupLen;
+ const gt = globalTime % groupPeriod;
+ const beatIdx = Math.floor(gt / cycle);
+ const pcx = gt % cycle;
+ const plx = cycle<140 ? pcx*(140/cycle) : pcx;
+ y -= bump(plx,10,25,10*lc.p);
+ label = 'P';
+ if (beatIdx < 3) {
+ const prDelays = [cycle*0.20, cycle*0.32, cycle*0.46];
+ const qOff = pcx - prDelays[beatIdx];
+ if (qOff>=0 && qOff<cycle*0.5) {
+ y += sharp(qOff,0,4,4*Math.abs(lc.qrs));
+ y -= sharp(qOff,4,8,80*lc.qrs);
+ y += sharp(qOff,12,6,12*Math.abs(lc.qrs));
+ y -= bump(qOff,30,45,20*lc.t,0.8);
+ label = qOff<12 ? 'R' : qOff<18 ? 'S' : 'T';
+ }
+ }
+
+ } else if (currentMode==='mobitz2') {
+ // Мобітц II: фіксований (нормальний) PQ, регулярне випадання QRS 2:1
+ const groupLen = 2, groupPeriod = cycle*groupLen;
+ const gt = globalTime % groupPeriod;
+ const beatIdx = Math.floor(gt / cycle);
+ const pcx = gt % cycle;
+ const plx = cycle<140 ? pcx*(140/cycle) : pcx;
+ y -= bump(plx,10,25,10*lc.p);
+ label = 'P';
+ if (beatIdx === 0) {
+ const qOff = pcx - cycle*0.26;
+ if (qOff>=0 && qOff<cycle*0.5) {
+ y += sharp(qOff,0,4,4*Math.abs(lc.qrs));
+ y -= sharp(qOff,4,10,70*lc.qrs);
+ y += sharp(qOff,14,8,15*Math.abs(lc.qrs));
+ y -= bump(qOff,35,45,20*lc.t,0.8);
+ label = qOff<14 ? 'R' : qOff<22 ? 'S' : 'T';
+ }
+ }
+
+ } else if (currentMode==='sinusarr') {
+ // Синусова (дихальна) аритмія: морфологія норми, але RR коливається з диханням
+ const respPeriod = 4600, variation = 0.22;
+ const modCycle = cycle * (1 + variation*Math.sin(2*Math.PI*globalTime/respPeriod));
+ const scx = globalTime % modCycle;
+ const lx = modCycle<140 ? scx*(140/modCycle) : scx;
+ y += getBaseComplex('normal', lx, lc);
+ label = getStdLabel(lx);
+
+ // РЕЖИМИ КАРДІОСТИМУЛЯТОРІВ 
+ } else if (currentMode==='vvi') {
+ // VVI: тільки шлуночковий спайк + широкий QRS, без P
+ const SPIKE_DUR = 3;
+ const QRS_START = SPIKE_DUR + 2;
+ const QRS_LEN = 95;
+ if (cx < SPIKE_DUR) {
+ drawPaceSpike(renderX, '#1ab8ff');
+ label = 'SPIKE_V';
+ } else if (cx >= QRS_START && cx < QRS_START + QRS_LEN) {
+ y += pacedQRS(cx - QRS_START, lc, 1.0);
+ label = 'PACE_QRS';
+ } else {
+ label = 'TP';
+ }
+
+ } else if (currentMode==='aai') {
+ // AAI: передсердний спайк + P-хвиля + нормальний вузький QRS
+ const SPIKE_DUR = 3;
+ const P_START = SPIKE_DUR + 1;
+ const P_LEN = 20;
+ const PQ_GAP = 30;
+ const QRS_START = P_START + P_LEN + PQ_GAP;
+ const QRS_LEN = 55;
+ if (cx < SPIKE_DUR) {
+ drawPaceSpike(renderX, '#f0a500');
+ label = 'SPIKE_A';
+ } else if (cx >= P_START && cx < P_START + P_LEN) {
+ y += pacedP(cx - P_START, lc);
+ label = 'PACE_P';
+ } else if (cx >= P_START + P_LEN && cx < QRS_START) {
+ label = 'PQ';
+ } else if (cx >= QRS_START && cx < QRS_START + QRS_LEN) {
+ const qx = cx - QRS_START;
+ y += sharp(qx, 0, 4, 4*Math.abs(lc.qrs));
+ y -= sharp(qx, 0, 12, 75*lc.qrs);
+ y -= bump(qx, 15, 38, 18*lc.t, 0.85);
+ label = qx < 20 ? 'PACE_QRS' : 'T';
+ } else {
+ label = 'TP';
+ }
+
+ } else if (currentMode==='ddd') {
+ // DDD: передсердний спайк + P + АВ-затримка + шлуночковий спайк + широкий QRS
+ const SPIKE_A_DUR = 3;
+ const P_START = SPIKE_A_DUR + 1;
+ const P_LEN = 20;
+ const AV_DELAY = 32;
+ const SPIKE_V_POS = P_START + P_LEN + AV_DELAY;
+ const QRS_START = SPIKE_V_POS + 4;
+ const QRS_LEN = 95;
+ if (cx < SPIKE_A_DUR) {
+ drawPaceSpike(renderX, '#f0a500');
+ label = 'SPIKE_A';
+ } else if (cx >= P_START && cx < P_START + P_LEN) {
+ y += pacedP(cx - P_START, lc);
+ label = 'PACE_P';
+ } else if (cx >= P_START + P_LEN && cx < SPIKE_V_POS) {
+ label = 'PQ';
+ } else if (cx >= SPIKE_V_POS && cx < SPIKE_V_POS + 3) {
+ drawPaceSpike(renderX, '#1ab8ff');
+ label = 'SPIKE_V';
+ } else if (cx >= QRS_START && cx < QRS_START + QRS_LEN) {
+ y += pacedQRS(cx - QRS_START, lc, 1.0);
+ label = 'PACE_QRS';
+ } else {
+ label = 'TP';
+ }
+
+ } else if (currentMode==='crt') {
+ // CRT: передсердний спайк + P + бівентрикулярний (подвійний) спайк + вужчий QRS
+ const SPIKE_A_DUR = 3;
+ const P_START = SPIKE_A_DUR + 1;
+ const P_LEN = 20;
+ const AV_DELAY = 28;
+ const SPIKE_BV_POS = P_START + P_LEN + AV_DELAY;
+ const QRS_START = SPIKE_BV_POS + 4;
+ const QRS_LEN = 72;
+ if (cx < SPIKE_A_DUR) {
+ drawPaceSpike(renderX, '#f0a500');
+ label = 'SPIKE_A';
+ } else if (cx >= P_START && cx < P_START + P_LEN) {
+ y += pacedP(cx - P_START, lc);
+ label = 'PACE_P';
+ } else if (cx >= P_START + P_LEN && cx < SPIKE_BV_POS) {
+ label = 'PQ';
+ } else if (cx >= SPIKE_BV_POS && cx < SPIKE_BV_POS + 3) {
+ drawPaceSpike(renderX - 3, '#1ab8ff');
+ drawPaceSpike(renderX + 3, '#22d97a');
+ label = 'SPIKE_V';
+ } else if (cx >= QRS_START && cx < QRS_START + QRS_LEN) {
+ y += pacedQRS(cx - QRS_START, lc, 0.78);
+ label = 'PACE_QRS';
+ } else {
+ label = 'TP';
+ }
+ }
+
+ y=Math.max(4,Math.min(canvas.height-4,y));
+
+ const x0=Math.floor(renderX-SPEED-1), x1=Math.ceil(renderX+1);
+ for (let i=x0;i<=x1;i++) if (i>=0&&i<canvas.width) hitMap[i]={label,y};
+
+ ctx.beginPath();
+ ctx.strokeStyle='#0a2342'; ctx.lineWidth=2.2; ctx.lineJoin='round';
+ if (renderX<SPEED) ctx.moveTo(renderX,y);
+ else { ctx.moveTo(renderX-SPEED,prevY); ctx.lineTo(renderX,y); }
+ ctx.stroke();
+
+ prevY=y; globalTime+=SPEED; renderX+=SPEED;
+ if (renderX>=canvas.width) { renderX=0; hitMap=new Array(canvas.width); }
+ animationId=requestAnimationFrame(drawMonitorFrame);
+}
+
+// ВИБІР ВІДВЕДЕННЯ 
+function setLead(lead, btn) {
+ if (lead===currentLead) return;
+ transitionOverlay.classList.add('active');
+ setTimeout(()=>{
+ currentLead=lead;
+ document.querySelectorAll('.lead-btn').forEach(b=>b.classList.remove('active'));
+ btn.classList.add('active');
+ document.getElementById('leadSubtitle').textContent=t().leadSubtitle(lead);
+ document.getElementById('canvasLeadName').textContent=t().canvasLead(lead);
+ resetMonitor();
+ transitionOverlay.classList.remove('active');
+ const cw=document.getElementById('canvasContainer');
+ cw.classList.remove('pulse-border'); void cw.offsetWidth;
+ cw.classList.add('pulse-border');
+ setTimeout(()=>cw.classList.remove('pulse-border'),1400);
+ },230);
+}
+
+// ВИБІР ПАТОЛОГІЇ 
+function setMode(mode, btnEl) {
+ isExamMode=false;
+ doTransition(()=>{
+ currentMode=mode;
+ document.querySelectorAll('button.rhythm-btn').forEach(b=>b.classList.remove('active'));
+ btnEl.classList.add('active');
+ updateInfoBox(mode);
+ document.getElementById('hrSlider').value=ecgData[currentLang][mode].hr;
+ updateHR(ecgData[currentLang][mode].hr);
+ document.getElementById('instructionBlock').style.display='block';
+ resetMonitor(); if (isPaused) togglePause();
+ });
+}
+
+function doTransition(cb) {
+ const ib=document.getElementById('infoBox');
+ ib.classList.add('updating');
+ transitionOverlay.classList.add('active');
+ setTimeout(()=>{ cb(); transitionOverlay.classList.remove('active'); setTimeout(()=>ib.classList.remove('updating'),30); },220);
+}
+
+function updateInfoBox(mode) {
+ const d=ecgData[currentLang][mode];
+ document.getElementById('descTitle').innerHTML=`<span class="badge ${d.badgeClass}" id="descBadge">${d.badge}</span> ${d.title}`;
+ document.getElementById('descTextContainer').innerHTML=`<p id="descText">${d.text}</p>`;
+}
+
+// HR 
+function updateHR(val) { currentHR=parseInt(val); document.getElementById('hrDisplay').innerText=currentHR+' '+t().hrUnit; }
+
+// ІСПИТ 
+// РЕЖИМ ІСПИТУ / QUIZ 
+let quizScore = { correct: 0, total: 0 };
+let quizAnswered = false;
+
+function startExamMode() {
+ isExamMode = true;
+ quizAnswered = false;
+ doTransition(() => {
+ // Вибираємо випадковий режим
+ const modes = Object.keys(ecgData[currentLang]);
+ currentMode = modes[Math.floor(Math.random() * modes.length)];
+ document.querySelectorAll('button.rhythm-btn').forEach(b => b.classList.remove('active'));
+ document.getElementById('hrSlider').value = ecgData[currentLang][currentMode].hr;
+ updateHR(ecgData[currentLang][currentMode].hr);
+ document.getElementById('instructionBlock').style.display = 'none';
+ resetMonitor();
+ if (isPaused) togglePause();
+ renderQuizPanel();
+ });
+}
+
+function renderQuizPanel() {
+ quizAnswered = false;
+ const correct = currentMode;
+ const d = ecgData[currentLang][correct];
+
+ const allModes = Object.keys(ecgData[currentLang]).filter(m => m !== correct);
+ const shuffled = allModes.sort(() => Math.random() - 0.5).slice(0, 3);
+ const options = [correct, ...shuffled].sort(() => Math.random() - 0.5);
+
+ const L = t();
+ const scoreHtml = quizScore.total > 0
+ ? `<div class="quiz-score">${L.quizScore(quizScore.correct,quizScore.total)}</div>`
+ : '';
+
+ document.getElementById('descTitle').innerHTML =
+ `${L.quizTitle} ${scoreHtml}`;
+
+ document.getElementById('descTextContainer').innerHTML = `
+ <p style="color:#ffc107;font-size:14px;margin:0 0 4px">
+ ${L.quizInstruct}
+ </p>
+ <div class="quiz-options" id="quizOptions">
+ ${options.map(m => `
+ <button class="quiz-option" onclick="submitQuizAnswer('${m}','${correct}')">
+ ${ecgData[currentLang][m].title}
+ </button>
+ `).join('')}
+ </div>
+ <div class="quiz-feedback" id="quizFeedback"></div>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+ <button class="quiz-next-btn" id="quizNextBtn" onclick="startExamMode()">${L.quizNext}</button>
+ <button class="reveal-btn" onclick="endExamMode()" style="background:#555;">${L.quizExit}</button>
+ </div>`;
+}
+
+function submitQuizAnswer(chosen, correct) {
+ if (quizAnswered) return;
+ quizAnswered = true;
+ quizScore.total++;
+
+ const isCorrect = chosen === correct;
+ if (isCorrect) quizScore.correct++;
+
+ document.querySelectorAll('.quiz-option').forEach(btn => {
+ const title = btn.textContent.trim();
+ const btnMode = Object.keys(ecgData[currentLang]).find(m => ecgData[currentLang][m].title === title);
+ if (btnMode === correct) btn.classList.add('correct');
+ else if (btnMode === chosen && !isCorrect) btn.classList.add('wrong');
+ else btn.disabled = true;
+ });
+
+ const L = t();
+ const feedback = document.getElementById('quizFeedback');
+ const d = ecgData[currentLang][correct];
+ if (isCorrect) {
+ feedback.className = 'quiz-feedback correct';
+ feedback.innerHTML = L.quizCorrect(d.title, d.text.split('.')[0]);
+ } else {
+ feedback.className = 'quiz-feedback wrong';
+ feedback.innerHTML = L.quizWrong(d.title, d.text.split('.')[0]);
+ }
+
+ document.getElementById('descTitle').innerHTML =
+ `${L.quizTitle} <div class="quiz-score">${L.quizScore(quizScore.correct,quizScore.total)}</div>`;
+
+ // Показуємо кнопку "Наступне"
+ document.getElementById('quizNextBtn').style.display = 'inline-block';
+}
+
+function endExamMode() {
+ isExamMode = false;
+ quizScore = { correct: 0, total: 0 };
+ doTransition(() => {
+ document.querySelectorAll('button.rhythm-btn').forEach(b => {
+ if (b.id === `btn-${currentMode}`) {
+ b.classList.add('active');
+ const grp = b.closest('details.control-group');
+ if (grp) grp.setAttribute('open','');
+ }
+ });
+ updateInfoBox(currentMode);
+ document.getElementById('instructionBlock').style.display = 'block';
+ });
+}
+
+// ПАУЗА 
+function togglePause() {
+ isPaused=!isPaused;
+ const btn=document.getElementById('pauseBtn');
+ if (isPaused) {
+ btn.innerHTML=t().resumeBtn; btn.style.backgroundColor='var(--success)';
+ if (!isExamMode&&!isCaliperActive) uiCanvas.style.cursor='pointer';
+ cancelAnimationFrame(animationId);
+ } else {
+ btn.innerHTML=t().pauseBtn; btn.style.backgroundColor='var(--danger)';
+ uiCanvas.style.cursor='default';
+ if (!isExamMode) { const dt=document.getElementById('descText'); if(dt) dt.innerHTML=ecgData[currentLang][currentMode].text; }
+ if (isCaliperActive) toggleCaliper();
+ drawMonitorFrame();
+ }
+}
+
+// RESET 
+function resetMonitor() {
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ globalTime=0; renderX=0; prevY=baselineY;
+ afibTimer=0; afibDrawing=false;
+ pacePhase=0;
+ hitMap=new Array(canvas.width);
+ if (!isExamMode) { const dt=document.getElementById('descText'); if(dt) dt.innerHTML=ecgData[currentLang][currentMode].text; }
+}
+
+// ЦИРКУЛЬ 
+let isCaliperActive=false, caliperState=0;
+let cPt1={x:0,y:0}, cPt2={x:0,y:0};
+
+function toggleCaliper() {
+ isCaliperActive=!isCaliperActive;
+ const btn=document.getElementById('caliperBtn');
+ if (isCaliperActive) {
+ btn.innerHTML=t().caliperOn; btn.style.backgroundColor='var(--success)'; btn.style.color='#fff';
+ uiCanvas.style.cursor='crosshair';
+ if (!isPaused) togglePause();
+ } else {
+ btn.innerHTML=t().caliperOff; btn.style.backgroundColor='var(--info)'; btn.style.color='#000';
+ uiCanvas.style.cursor=(isPaused&&!isExamMode)?'pointer':'default';
+ uiCtx.clearRect(0,0,uiCanvas.width,uiCanvas.height); caliperState=0;
+ }
+}
+function getPos(e) {
+ const r=uiCanvas.getBoundingClientRect();
+ const cx=e.touches?e.touches[0].clientX:e.clientX;
+ const cy=e.touches?e.touches[0].clientY:e.clientY;
+ return {x:cx-r.left,y:cy-r.top};
+}
+uiCanvas.addEventListener('mousedown', handleDown);
+uiCanvas.addEventListener('touchstart',handleDown,{passive:false});
+uiCanvas.addEventListener('mousemove', handleMove);
+uiCanvas.addEventListener('touchmove', handleMove,{passive:false});
+
+function handleDown(e) {
+ e.preventDefault();
+ const pos=getPos(e);
+ if (isCaliperActive) {
+ if (caliperState===0) { cPt1=pos; cPt2=pos; caliperState=1; }
+ else { cPt2=pos; caliperState=0; }
+ drawCaliper(); return;
+ }
+ if (isPaused&&!isExamMode) {
+ let hx=Math.floor(pos.x), hd=hitMap[hx];
+ if (!hd) { for(let o=1;o<=5;o++){ if(hitMap[hx+o]){hd=hitMap[hx+o];break;} if(hitMap[hx-o]){hd=hitMap[hx-o];break;} } }
+ const dt=document.getElementById('descText');
+ if (hd&&hd.label&&Math.abs(hd.y-pos.y)<120) {
+ const a=anatomyData[currentLang][hd.label];
+ if (a&&dt) dt.innerHTML=ecgData[currentLang][currentMode].text+'<hr style="border-top:1px solid #495057;margin:12px 0;">'
+ +`<span style="color:var(--info);font-size:15px;"> <b>${a.title}:</b></span> ${a.text}`;
+ } else if (dt) dt.innerHTML=ecgData[currentLang][currentMode].text;
+ }
+}
+function handleMove(e) {
+ if (!isCaliperActive||caliperState!==1) return;
+ e.preventDefault(); cPt2=getPos(e); drawCaliper();
+}
+function drawCaliper() {
+ uiCtx.clearRect(0,0,uiCanvas.width,uiCanvas.height);
+ if (!isCaliperActive) return;
+
+ // Вертикальні мітки
+ uiCtx.strokeStyle='rgba(255,193,7,0.35)'; uiCtx.lineWidth=1; uiCtx.setLineDash([3,4]);
+ [cPt1,cPt2].forEach(p=>{ uiCtx.beginPath(); uiCtx.moveTo(p.x,0); uiCtx.lineTo(p.x,uiCanvas.height); uiCtx.stroke(); });
+ uiCtx.setLineDash([]);
+
+ // Горизонтальна лінія
+ uiCtx.beginPath(); uiCtx.strokeStyle='#ffc107'; uiCtx.lineWidth=2; uiCtx.setLineDash([5,5]);
+ uiCtx.moveTo(cPt1.x,cPt1.y); uiCtx.lineTo(cPt2.x,cPt2.y); uiCtx.stroke(); uiCtx.setLineDash([]);
+
+ uiCtx.fillStyle='#ffc107';
+ [cPt1,cPt2].forEach(p=>{ uiCtx.beginPath(); uiCtx.arc(p.x,p.y,4,0,Math.PI*2); uiCtx.fill(); });
+
+ const dx=Math.abs(cPt2.x-cPt1.x), dy=Math.abs(cPt2.y-cPt1.y);
+ const ms=Math.round((dx/10)*40), mV=((dy/10)*0.1).toFixed(2);
+ const L=t();
+ const comment=ms<=0?'':ms<100?L.caliperNorm:ms<120?L.caliperBorder:L.caliperProlonged;
+
+ let bx=cPt2.x+15, by=cPt2.y+15;
+ const bw=170, bh=58;
+ if (bx+bw>uiCanvas.width) bx=cPt2.x-bw-10;
+ if (by+bh>uiCanvas.height) by=cPt2.y-bh-10;
+
+ uiCtx.fillStyle='rgba(0,0,0,0.88)'; uiCtx.fillRect(bx,by,bw,bh);
+ uiCtx.strokeStyle='#ffc107'; uiCtx.lineWidth=1; uiCtx.strokeRect(bx,by,bw,bh);
+ uiCtx.fillStyle='#fff'; uiCtx.font='13px Helvetica,sans-serif';
+ uiCtx.fillText(L.caliperMs(ms,comment), bx+8, by+22);
+ uiCtx.fillText(L.caliperMv(mV), bx+8, by+44);
+}
+
+// МОБІЛЬНИЙ АКОРДЕОН: на вузьких екранах згортаємо всі групи, крім першої,
+// щоб не треба було гортати повз усі кнопки, щоб побачити монітор
+(function collapseGroupsOnMobile() {
+ if (window.innerWidth > 600) return;
+ document.querySelectorAll('.controls-grid > details.control-group').forEach((d, i) => {
+ if (i > 0) d.removeAttribute('open');
+ });
+})();
+
+// СТАРТ 
+drawMonitorFrame();
+
+// PWA: реєстрація Service Worker 
+if ('serviceWorker' in navigator) {
+ window.addEventListener('load', () => {
+ navigator.serviceWorker.register('/sw.js')
+ .catch(err => console.warn('SW реєстрація не вдалась:', err));
+ });
+}
+
+// 
+// СТРІЧКА 12 ВІДВЕДЕНЬ
+// 
+const STRIP_LEADS = ['I','II','III','aVR','aVL','aVF','V1','V2','V3','V4','V5','V6'];
+
+// Генерує Y-зміщення для стрічки через getBaseComplex (ідентична морфологія з монітором)
+function stripGetDY(mode, cx, lc, cycleLen) {
+ const lx = cycleLen < 140 ? cx * (140 / cycleLen) : cx;
+ if (['normal','lvh','pe','stemi_inf','stemi_ant','stemi_lat','stemi_post','stemi_rv','nstemi','infarct','lbbb','hyperk','wpw','pericarditis'].includes(mode)) {
+ return getBaseComplex(mode, lx, lc);
+ }
+ if (mode === 'pvc') {
+ const pvcCycle = cycleLen * 3;
+ const px3 = cx % pvcCycle;
+ if (px3 < cycleLen) { const plx = cycleLen<140?px3*(140/cycleLen):px3; return getBaseComplex('normal',plx,lc); }
+ const ps = cycleLen * 1.3;
+ if (px3>ps && px3<ps+150) { const wx=px3-ps; let dy=0; dy-=sharp(wx,0,25,110*lc.qrs); dy+=sharp(wx,25,30,40*Math.abs(lc.qrs)); dy+=bump(wx,70,70,35*lc.t,1.2); return dy; }
+ return 0;
+ }
+ if (mode === 'vt') {
+ const half=cycleLen/2, sg=Math.sign(lc.qrs||1); let dy=0;
+ if (cx<half){dy+=40*sg;dy-=(0.5-0.5*Math.cos((cx/half)*Math.PI))*100*lc.qrs;}
+ else{dy-=60*sg;dy+=(0.5-0.5*Math.cos(((cx-half)/half)*Math.PI))*100*lc.qrs;}
+ return dy;
+ }
+ if (mode === 'afib') {
+ let dy=(3*Math.sin(cx*0.35)+1.5*Math.sin(cx*0.7))*Math.abs(lc.qrs);
+ dy+=sharp(cx,16,4,4*Math.abs(lc.qrs)); dy-=sharp(cx,20,8,80*lc.qrs);
+ dy+=sharp(cx,28,6,12*Math.abs(lc.qrs)); dy-=bump(cx,48,35,15*lc.t,0.8);
+ return dy;
+ }
+ if (mode === 'avblock') {
+ let dy=-bump(lx,10,25,10*lc.p);
+ const qlx=(cx%(cycleLen*0.6))*(140/(cycleLen*0.6));
+ dy-=sharp(qlx,52,8,60*lc.qrs); dy+=sharp(qlx,60,6,40*Math.abs(lc.qrs)); dy-=bump(qlx,90,55,22*lc.t,1.1);
+ return dy;
+ }
+ if (mode === 'mobitz1') {
+ const groupLen=4, groupPeriod=cycleLen*groupLen;
+ const gt=cx%groupPeriod, beatIdx=Math.floor(gt/cycleLen), pcx=gt%cycleLen;
+ const plx=cycleLen<140?pcx*(140/cycleLen):pcx;
+ let dy=-bump(plx,10,25,10*lc.p);
+ if (beatIdx<3) {
+ const prDelays=[cycleLen*0.20, cycleLen*0.32, cycleLen*0.46];
+ const qOff=pcx-prDelays[beatIdx];
+ if (qOff>=0 && qOff<cycleLen*0.5) {
+ dy+=sharp(qOff,0,4,4*Math.abs(lc.qrs)); dy-=sharp(qOff,4,8,80*lc.qrs);
+ dy+=sharp(qOff,12,6,12*Math.abs(lc.qrs)); dy-=bump(qOff,30,45,20*lc.t,0.8);
+ }
+ }
+ return dy;
+ }
+ if (mode === 'mobitz2') {
+ const groupLen=2, groupPeriod=cycleLen*groupLen;
+ const gt=cx%groupPeriod, beatIdx=Math.floor(gt/cycleLen), pcx=gt%cycleLen;
+ const plx=cycleLen<140?pcx*(140/cycleLen):pcx;
+ let dy=-bump(plx,10,25,10*lc.p);
+ if (beatIdx===0) {
+ const qOff=pcx-cycleLen*0.26;
+ if (qOff>=0 && qOff<cycleLen*0.5) {
+ dy+=sharp(qOff,0,4,4*Math.abs(lc.qrs)); dy-=sharp(qOff,4,10,70*lc.qrs);
+ dy+=sharp(qOff,14,8,15*Math.abs(lc.qrs)); dy-=bump(qOff,35,45,20*lc.t,0.8);
+ }
+ }
+ return dy;
+ }
+ if (mode === 'sinusarr') {
+ // На статичній стрічці показуємо репрезентативний нормальний цикл (варіабельність RR
+ // найкраще видно на живому моніторі/ритмовій смузі, а не на статичному знімку)
+ return getBaseComplex('normal', lx, lc);
+ }
+ if (mode==='vvi'){ const QS=8,QW=90,w=1.0; if(cx<QS||cx>=QS+QW)return 0; const q=cx-QS; let dy=0; dy-=sharp(q,0,Math.round(20*w),70*lc.qrs); dy-=sharp(q,Math.round(20*w),Math.round(20*w),60*lc.qrs); dy-=bump(q,Math.round(40*w),Math.round(50*w),20*lc.t,1.1); return dy; }
+ if (mode==='aai'){ let dy=-bump(lx,5,20,8*lc.p); const QS=55; if(cx>=QS&&cx<QS+55){const q=cx-QS;dy-=sharp(q,0,8,75*lc.qrs);dy-=bump(q,12,35,16*lc.t,0.85);} return dy; }
+ if (mode==='ddd'){ let dy=-bump(lx,5,20,8*lc.p); const QS=60,QW=90,w=1.0; if(cx>=QS&&cx<QS+QW){const q=cx-QS;dy-=sharp(q,0,Math.round(20*w),70*lc.qrs);dy-=sharp(q,Math.round(20*w),Math.round(20*w),60*lc.qrs);dy-=bump(q,Math.round(40*w),Math.round(50*w),20*lc.t,1.1);} return dy; }
+ if (mode==='crt'){ let dy=-bump(lx,5,20,8*lc.p); const QS=56,QW=72,w=0.78; if(cx>=QS&&cx<QS+QW){const q=cx-QS;dy-=sharp(q,0,Math.round(20*w),70*lc.qrs);dy-=sharp(q,Math.round(20*w),Math.round(20*w),60*lc.qrs);dy-=bump(q,Math.round(40*w),Math.round(50*w),20*lc.t,1.1);} return dy; }
+ return 0;
+}
+// Малює спайки стимулятора на canvas стрічки
+function drawStripSpikes(ctx, mode, cycleLen, totalPx, baselineY) {
+ if (!['vvi','aai','ddd','crt'].includes(mode)) return;
+ ctx.lineWidth = 1.5;
+ const spikeH = 38;
+ for (let px = 0; px < totalPx; px++) {
+ const cx = px % cycleLen;
+ if (mode==='vvi' && cx < 3) {
+ ctx.strokeStyle='#1ab8ff';
+ ctx.beginPath(); ctx.moveTo(px, baselineY+spikeH/2); ctx.lineTo(px, baselineY-spikeH/2); ctx.stroke();
+ }
+ if ((mode==='aai'||mode==='ddd'||mode==='crt') && cx < 3) {
+ ctx.strokeStyle='#f0a500';
+ ctx.beginPath(); ctx.moveTo(px, baselineY+spikeH/2); ctx.lineTo(px, baselineY-spikeH/2); ctx.stroke();
+ }
+ if ((mode==='ddd'||mode==='crt') && cx >= 57 && cx < 60) {
+ ctx.strokeStyle='#1ab8ff';
+ ctx.beginPath(); ctx.moveTo(px, baselineY+spikeH/2); ctx.lineTo(px, baselineY-spikeH/2); ctx.stroke();
+ }
+ if (mode==='crt' && cx >= 57 && cx < 60) {
+ ctx.strokeStyle='#22d97a';
+ ctx.beginPath(); ctx.moveTo(px+3, baselineY+spikeH/2); ctx.lineTo(px+3, baselineY-spikeH/2); ctx.stroke();
+ }
+ }
+}
+
+// Малює одну комірку відведення (або ритмову смугу)
+function drawStripCell(canvas, leadIdx, isRhythm) {
+ const ctx2 = canvas.getContext('2d');
+ const W = canvas.width, H = canvas.height;
+ if (W===0||H===0) return;
+ const baseline = H/2 + 6;
+ const mode = currentMode;
+ const lc = (LC[mode] || LC['normal'])[leadIdx];
+
+ // Цикл у пікселях - підбираємо так щоб виглядало як 25 мм/с
+ // При ширині ~220px для 3-колонкової сітки - 2.5 удари виглядають чисто
+ const beatsToShow = isRhythm ? 7 : 2.5;
+ const cycleLen = Math.round(W / beatsToShow);
+ const totalPx = W;
+
+ // Паперова сітка
+ const small = cycleLen / 14; // ~1мм при 25мм/с
+ const big = small * 5;
+ ctx2.clearRect(0,0,W,H);
+ for (let x=0;x<W;x+=small) {
+ const isBig = Math.abs(Math.round(x/big)*big - x) < 0.8;
+ ctx2.strokeStyle = isBig ? 'rgba(220,53,69,0.38)' : 'rgba(220,53,69,0.13)';
+ ctx2.lineWidth=0.5;
+ ctx2.beginPath(); ctx2.moveTo(x,0); ctx2.lineTo(x,H); ctx2.stroke();
+ }
+ for (let y=0;y<H;y+=small) {
+ const isBig = Math.abs(Math.round(y/big)*big - y) < 0.8;
+ ctx2.strokeStyle = isBig ? 'rgba(220,53,69,0.38)' : 'rgba(220,53,69,0.13)';
+ ctx2.lineWidth=0.5;
+ ctx2.beginPath(); ctx2.moveTo(0,y); ctx2.lineTo(W,y); ctx2.stroke();
+ }
+
+ // Спайки стимулятора
+ drawStripSpikes(ctx2, mode, cycleLen, totalPx, baseline);
+
+ // ЕКГ-крива
+ ctx2.beginPath();
+ ctx2.strokeStyle = '#0a2342';
+ ctx2.lineWidth = 1.6;
+ ctx2.lineJoin = 'round';
+ for (let px=0; px<=W; px++) {
+ const cx = px % cycleLen;
+ const dy = stripGetDY(mode, cx, lc, cycleLen);
+ const y = baseline + dy;
+ if (px===0) ctx2.moveTo(px, y); else ctx2.lineTo(px, y);
+ }
+ ctx2.stroke();
+}
+
+// Будує DOM стрічки і малює всі канваси
+function buildAndRenderStrip() {
+ const grid = document.getElementById('stripLeadGrid');
+ const rhythm = document.getElementById('stripRhythmRow');
+ grid.innerHTML = '';
+ // Прибираємо старий canvas ритму якщо є
+ const oldRhyCv = rhythm.querySelector('canvas');
+ if (oldRhyCv) oldRhyCv.remove();
+
+ const cellCanvases = [];
+
+ STRIP_LEADS.forEach((lead, i) => {
+ const cell = document.createElement('div');
+ cell.className = 'strip-cell';
+ const label = document.createElement('div');
+ label.className = 'strip-cell-label';
+ label.textContent = lead;
+ const cv = document.createElement('canvas');
+ cv.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:block;';
+ cell.appendChild(label);
+ cell.appendChild(cv);
+ grid.appendChild(cell);
+ cellCanvases.push({cv, i});
+ });
+
+ // Ритмова смуга
+ const rhyCv = document.createElement('canvas');
+ rhyCv.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:block;';
+ rhythm.appendChild(rhyCv);
+
+ // Рендеримо після layout
+ requestAnimationFrame(() => {
+ requestAnimationFrame(() => {
+ cellCanvases.forEach(({cv, i}) => {
+ cv.width = cv.offsetWidth || 220;
+ cv.height = cv.offsetHeight || 90;
+ drawStripCell(cv, i, false);
+ });
+ rhyCv.width = rhyCv.offsetWidth || 900;
+ rhyCv.height = rhyCv.offsetHeight || 90;
+ drawStripCell(rhyCv, 1, true); // відведення II
+ });
+ });
+}
+
+function updateStripMeta() {
+ const d = ecgData[currentLang][currentMode];
+ const L = t();
+ const hr = parseInt(document.getElementById('hrDisplay').textContent) || d.hr;
+ const qrs = ['vvi','ddd','crt','lbbb','vt','wpw'].includes(currentMode) ? '>120' :
+ ['aai'].includes(currentMode) ? '90' : '90';
+ const pq = ['avblock'].includes(currentMode) ? '-' : ['wpw'].includes(currentMode) ? '<120' : '160';
+ const hrLabel = currentLang==='ua' ? 'ЧСС' : 'HR';
+ const msLabel = currentLang==='ua' ? 'уд/хв' : 'bpm';
+ const msUnit  = currentLang==='ua' ? 'мс' : 'ms';
+ document.getElementById('stripMeta').innerHTML =
+ `${hrLabel}: <b>${hr}</b> ${msLabel}<br>PQ: ${pq} ${msUnit} · QRS: ${qrs} ${msUnit}`;
+ document.getElementById('stripModalTitle').textContent =
+ ` ${d.title}`;
+ document.getElementById('stripFooterLeft').textContent =
+ `${L.stripFooter} · ${d.title}`;
+}
+
+function openStrip() {
+ const modal = document.getElementById('stripModal');
+ modal.classList.remove('hidden');
+ updateStripMeta();
+ buildAndRenderStrip();
+}
+
+function closeStrip() {
+ document.getElementById('stripModal').classList.add('hidden');
+}
+
+function closeStripOutside(e) {
+ if (e.target === document.getElementById('stripModal')) closeStrip();
+}
+
+// Зберігає стрічку як PNG через offscreen canvas
+function saveStripPNG() {
+ const paper = document.getElementById('stripPaper');
+ const W = paper.offsetWidth, H = paper.offsetHeight;
+ const offscreen = document.createElement('canvas');
+ offscreen.width = W * 2; // @2x для чіткості
+ offscreen.height = H * 2;
+ const oct = offscreen.getContext('2d');
+ oct.scale(2, 2);
+
+ // Фон
+ oct.fillStyle = '#fffafb';
+ oct.fillRect(0, 0, W, H);
+
+ // Паперова сітка
+ const small = 10, big = 50;
+ for (let x=0;x<W;x+=small) {
+ oct.strokeStyle = (x%big===0) ? 'rgba(220,53,69,0.38)':'rgba(220,53,69,0.13)';
+ oct.lineWidth=0.5;
+ oct.beginPath(); oct.moveTo(x,0); oct.lineTo(x,H); oct.stroke();
+ }
+ for (let y=0;y<H;y+=small) {
+ oct.strokeStyle = (y%big===0) ? 'rgba(220,53,69,0.38)':'rgba(220,53,69,0.13)';
+ oct.lineWidth=0.5;
+ oct.beginPath(); oct.moveTo(0,y); oct.lineTo(W,y); oct.stroke();
+ }
+
+ // Малюємо всі канваси з DOM на offscreen
+ const allCvs = paper.querySelectorAll('canvas');
+ allCvs.forEach(cv => {
+ const rect = cv.getBoundingClientRect();
+ const pRect= paper.getBoundingClientRect();
+ const dx = rect.left - pRect.left;
+ const dy2= rect.top - pRect.top;
+ oct.drawImage(cv, dx, dy2, rect.width, rect.height);
+ });
+
+ // Мітки відведень
+ oct.font = 'bold 10px Arial, sans-serif';
+ const cells = paper.querySelectorAll('.strip-cell');
+ cells.forEach(cell => {
+ const label = cell.querySelector('.strip-cell-label');
+ if (!label) return;
+ const rect = cell.getBoundingClientRect();
+ const pRect = paper.getBoundingClientRect();
+ oct.fillStyle = 'rgba(255,250,251,0.8)';
+ oct.fillRect(rect.left-pRect.left+3, rect.top-pRect.top+2, 28, 14);
+ oct.fillStyle = '#dc3545';
+ oct.fillText(label.textContent, rect.left-pRect.left+5, rect.top-pRect.top+13);
+ });
+ // Ритмова мітка
+ const rhythmRow = paper.querySelector('.strip-rhythm-row');
+ if (rhythmRow) {
+ const rect = rhythmRow.getBoundingClientRect();
+ const pRect = paper.getBoundingClientRect();
+ oct.fillStyle='rgba(255,250,251,0.8)'; oct.fillRect(rect.left-pRect.left+3, rect.top-pRect.top+2, 80, 14);
+ oct.fillStyle='#198754'; oct.fillText('II - ритмова смуга', rect.left-pRect.left+5, rect.top-pRect.top+13);
+ }
+
+ offscreen.toBlob(blob => {
+ const a = document.createElement('a');
+ a.href = URL.createObjectURL(blob);
+ const modeName = ecgData[currentLang][currentMode].title.replace(/\s+/g,'_').replace(/[^a-zA-Zа-яА-ЯіІїЇєЄ0-9_]/g,'');
+ a.download = `ECG_${modeName}.png`;
+ a.click();
+ URL.revokeObjectURL(a.href);
+ }, 'image/png');
+}
+
+</script>
+</body>
+</html>
