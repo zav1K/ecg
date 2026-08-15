@@ -739,6 +739,7 @@ const i18n = {
   quizTitle: 'Режим іспиту',
   quizScore: (c,t) => `Рахунок: ${c}/${t} правильно`,
   quizInstruct: '<b>Визначте ритм.</b> Використовуйте паузу та циркуль для аналізу.',
+  quizFreeNote: '🔒 Питання лише по безкоштовних станах. Розблокуй повний банк (25+ станів).',
   quizNext: 'Наступне питання',
   quizExit: '× Вийти з іспиту',
   quizCorrect: (title,text) => `<b>Правильно!</b> ${title} - ${text}.`,
@@ -765,8 +766,8 @@ const i18n = {
   footerVersion: 'Версія 0.8.1 · 2026',
   disclaimer: 'Навчальний інструмент. Не призначений для клінічної діагностики чи прийняття медичних рішень.',
   premiumTitle: 'Повний доступ',
-  premiumIntro: 'Цей стан і ще кілька функцій входять до преміум-бібліотеки.',
-  premiumFeatures: ['Усі 25+ станів і ритмів', 'Режим іспиту', 'Стрічка 12 відведень (PNG)'],
+  premiumIntro: 'Цей стан і ще кілька функцій входять до спеціалізованого преміум-паку.',
+  premiumFeatures: ['3 рідкісні локалізації STEMI (задня, ПШ, бічна)', 'Усі 4 режими кардіостимуляції', 'АВ-блокада II ст. Мобітц II', 'Повний банк питань іспиту (25+ станів)', 'Стрічка 12 відведень (PNG)'],
   premiumPriceNote: 'одноразово, назавжди',
   premiumUnlockBtn: 'Розблокувати',
   premiumLaterBtn: 'Може пізніше',
@@ -821,6 +822,7 @@ const i18n = {
   quizTitle: 'Exam Mode',
   quizScore: (c,t) => `Score: ${c}/${t} correct`,
   quizInstruct: '<b>Identify the rhythm.</b> Use pause and calipers to analyze.',
+  quizFreeNote: '🔒 Questions cover free states only. Unlock the full question bank (25+ states).',
   quizNext: 'Next question',
   quizExit: '× Exit exam',
   quizCorrect: (title,text) => `<b>Correct!</b> ${title} - ${text}.`,
@@ -847,8 +849,8 @@ const i18n = {
   footerVersion: 'Version 0.8.1 · 2026',
   disclaimer: 'Educational tool only. Not intended for clinical diagnosis or medical decision-making.',
   premiumTitle: 'Full Access',
-  premiumIntro: 'This state and a few other features are part of the premium library.',
-  premiumFeatures: ['All 25+ states and rhythms', 'Exam mode', '12-lead strip (PNG export)'],
+  premiumIntro: 'This state and a few other features are part of the specialist premium pack.',
+  premiumFeatures: ['3 rare STEMI locations (posterior, RV, lateral)', 'All 4 pacemaker modes', '2nd-degree AV block, Mobitz II', 'Full exam question bank (25+ states)', '12-lead strip (PNG export)'],
   premiumPriceNote: 'one-time, forever',
   premiumUnlockBtn: 'Unlock',
   premiumLaterBtn: 'Maybe later',
@@ -1161,8 +1163,10 @@ const LC = {
 const LEAD_NAMES = ['I','II','III','aVR','aVL','aVF','V1','V2','V3','V4','V5','V6'];
 const LEAD_IDX = Object.fromEntries(LEAD_NAMES.map((n,i)=>[n,i]));
 
-// PREMIUM (freemium: базові стани безкоштовно, решта + іспит + стрічка - за одноразовий анлок)
-const FREE_MODES = new Set(['normal','sinusarr','afib','pvc','stemi_inf','avblock','pe','wpw']);
+// PREMIUM (freemium: більшість станів безкоштовно; преміум - спеціалізований пак
+// (3 рідкісні локалізації STEMI, Мобітц II, усі 4 кардіостимулятори) + повний банк
+// питань іспиту (безкоштовно - тільки по безкоштовних станах) + експорт стрічки)
+const FREE_MODES = new Set(['normal','lvh','pe','nstemi','infarct','stemi_inf','stemi_ant','afib','pvc','vt','avblock','lbbb','hyperk','mobitz1','wpw','sinusarr','pericarditis']);
 let isPremiumUnlocked = false;
 try { isPremiumUnlocked = localStorage.getItem('ecgSimPremium') === '1'; } catch(e) {}
 
@@ -1678,13 +1682,18 @@ function updateHR(val) { currentHR=parseInt(val); document.getElementById('hrDis
 let quizScore = { correct: 0, total: 0 };
 let quizAnswered = false;
 
+// Безкоштовно - іспит лише по безкоштовних станах; преміум відкриває повний банк (усі 25+)
+function examModePool() {
+ const all = Object.keys(ecgData[currentLang]);
+ return isPremiumUnlocked ? all : all.filter(m => FREE_MODES.has(m));
+}
+
 function startExamMode() {
- if (!isPremiumUnlocked) { showPremiumModal(); return; }
  isExamMode = true;
  quizAnswered = false;
  doTransition(() => {
  // Вибираємо випадковий режим
- const modes = Object.keys(ecgData[currentLang]);
+ const modes = examModePool();
  currentMode = modes[Math.floor(Math.random() * modes.length)];
  document.querySelectorAll('button.rhythm-btn').forEach(b => b.classList.remove('active'));
  document.getElementById('hrSlider').value = ecgData[currentLang][currentMode].hr;
@@ -1711,7 +1720,7 @@ function renderQuizPanel() {
  const correct = currentMode;
  const d = ecgData[currentLang][correct];
 
- const allModes = Object.keys(ecgData[currentLang]).filter(m => m !== correct);
+ const allModes = examModePool().filter(m => m !== correct);
  const shuffled = shuffleArray(allModes).slice(0, 3);
  const options = shuffleArray([correct, ...shuffled]);
 
@@ -1723,10 +1732,14 @@ function renderQuizPanel() {
  document.getElementById('descTitle').innerHTML =
  `${L.quizTitle} ${scoreHtml}`;
 
+ const upsell = !isPremiumUnlocked
+ ? `<p style="color:#6c757d;font-size:12px;margin:0 0 8px;cursor:pointer;" onclick="showPremiumModal()">${L.quizFreeNote}</p>`
+ : '';
  document.getElementById('descTextContainer').innerHTML = `
  <p style="color:#ffc107;font-size:14px;margin:0 0 4px">
  ${L.quizInstruct}
  </p>
+ ${upsell}
  <div class="quiz-options" id="quizOptions">
  ${options.map(m => `
  <button class="quiz-option" onclick="submitQuizAnswer('${m}','${correct}')">
