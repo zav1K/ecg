@@ -450,10 +450,12 @@
     <div class="modal-content">
         <div class="modal-header" id="premiumModalTitle">Повний доступ</div>
         <div class="modal-body">
-            <p id="premiumModalIntro">Цей стан і ще кілька функцій входять до преміум-бібліотеки.</p>
+            <p id="premiumModalIntro">Цей стан і ще кілька функцій входять до спеціалізованого преміум-паку.</p>
             <ul class="premium-features" id="premiumFeaturesList">
-                <li>Усі 25+ станів і ритмів</li>
-                <li>Режим іспиту</li>
+                <li>3 рідкісні локалізації STEMI (задня, ПШ, бічна)</li>
+                <li>Усі 4 режими кардіостимуляції</li>
+                <li>АВ-блокада II ст. Мобітц II</li>
+                <li>Повний банк питань іспиту (25+ станів)</li>
                 <li>Стрічка 12 відведень (PNG)</li>
             </ul>
             <div class="premium-price" id="premiumPrice">$2.99 <span id="premiumPriceNote">одноразово, назавжди</span></div>
@@ -1186,9 +1188,8 @@ function refreshLockUI() {
  const mode = btn.id.replace(/^btn-/, '');
  btn.classList.toggle('locked', isModeLocked(mode));
  });
- const examBtn = document.getElementById('examBtn');
+ // Режим іспиту тепер безкоштовний (обмежений лише пулом питань) - лока не показуємо
  const stripBtn = document.getElementById('stripBtn');
- if (examBtn) examBtn.classList.toggle('locked-feature', !isPremiumUnlocked);
  if (stripBtn) stripBtn.classList.toggle('locked-feature', !isPremiumUnlocked);
 }
 
@@ -1923,9 +1924,9 @@ function drawCaliper() {
  });
 })();
 
-// СТАРТ
+// СТАРТ (applyLang() усередині сама викликає refreshLockUI())
+applyLang();
 drawMonitorFrame();
-refreshLockUI();
 
 // PWA: реєстрація Service Worker 
 if ('serviceWorker' in navigator) {
