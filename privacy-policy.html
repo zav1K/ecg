@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Політика конфіденційності — ЕКГ-симулятор</title>
+<style>
+ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 720px; margin: 0 auto; padding: 32px 20px 80px; line-height: 1.6; color: #1b1f1d; background: #fff; }
+ h1 { font-size: 26px; margin-bottom: 4px; }
+ h2 { font-size: 19px; margin-top: 34px; }
+ .updated { color: #666; font-size: 13px; margin-bottom: 28px; }
+ .lang-switch { margin-bottom: 30px; }
+ .lang-switch button { padding: 6px 14px; border: 1px solid #999; background: #f4f4f4; border-radius: 4px; cursor: pointer; font-weight: bold; }
+ .lang-switch button.active { background: #0d6efd; color: #fff; border-color: #0d6efd; }
+ #en { display: none; }
+ ul { padding-left: 22px; }
+ li { margin-bottom: 8px; }
+ a { color: #0d6efd; }
+ footer { margin-top: 50px; padding-top: 16px; border-top: 1px solid #ddd; color: #666; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="lang-switch">
+ <button id="btn-ua" class="active" onclick="showLang('ua')">Українська</button>
+ <button id="btn-en" onclick="showLang('en')">English</button>
+</div>
+
+<div id="ua">
+<h1>Політика конфіденційності</h1>
+<p class="updated">Останнє оновлення: 15 серпня 2026</p>
+
+<p>ЕКГ-симулятор ("застосунок") — навчальний інструмент для студентів медичних спеціальностей і медичних працівників, розроблений як персональний проєкт. Ця сторінка пояснює, як застосунок працює з даними.</p>
+
+<h2>Які дані ми збираємо</h2>
+<p><strong>Жодних.</strong> Застосунок не має сервера, бекенду чи бази даних. Він не збирає, не передає й не зберігає жодної особистої інформації, не використовує аналітику, рекламні SDK чи сторонні трекери.</p>
+
+<h2>Що зберігається локально на пристрої</h2>
+<p>Застосунок використовує <code>localStorage</code> браузера/пристрою виключно для:</p>
+<ul>
+ <li>прапорця, чи переглянуто нотатки про оновлення поточної версії;</li>
+ <li>статусу розблокування преміум-контенту (після покупки в Google Play).</li>
+</ul>
+<p>Ці дані ніколи не покидають пристрій, не передаються нам чи третім сторонам і видаляються при видаленні застосунку або очищенні даних браузера.</p>
+
+<h2>Покупки в застосунку</h2>
+<p>Одноразова покупка преміум-доступу обробляється системою оплати Google Play. Ми не бачимо й не зберігаємо дані вашої платіжної картки — це повністю в межах відповідальності Google. Див. <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">політику конфіденційності Google Play</a>.</p>
+
+<h2>Дозволи пристрою</h2>
+<p>Застосунок не запитує доступ до камери, мікрофона, контактів, геолокації чи будь-яких інших чутливих дозволів.</p>
+
+<h2>Діти</h2>
+<p>Застосунок призначений для студентів медичних спеціальностей і дорослих медичних працівників і не націлений на дітей.</p>
+
+<h2>Зміни цієї політики</h2>
+<p>За потреби ця сторінка може оновлюватися. Дата останнього оновлення вказана вгорі.</p>
+
+<h2>Контакт</h2>
+<p>Питання щодо конфіденційності: <a href="mailto:zavikhorror@gmail.com">zavikhorror@gmail.com</a></p>
+</div>
+
+<div id="en">
+<h1>Privacy Policy</h1>
+<p class="updated">Last updated: August 15, 2026</p>
+
+<p>ECG Simulator ("the app") is an educational tool for medical students and healthcare professionals, built as a personal project. This page explains how the app handles data.</p>
+
+<h2>What data we collect</h2>
+<p><strong>None.</strong> The app has no server, backend, or database. It does not collect, transmit, or store any personal information, and uses no analytics, advertising SDKs, or third-party trackers.</p>
+
+<h2>What is stored locally on your device</h2>
+<p>The app uses browser/device <code>localStorage</code> solely for:</p>
+<ul>
+ <li>a flag indicating whether you've seen the current version's patch notes;</li>
+ <li>your premium-unlock status (after a Google Play purchase).</li>
+</ul>
+<p>This data never leaves your device, is never shared with us or third parties, and is removed when you uninstall the app or clear your browser data.</p>
+
+<h2>In-app purchases</h2>
+<p>The one-time premium unlock is processed by Google Play's billing system. We never see or store your payment card details — that is handled entirely by Google. See <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Play's privacy policy</a>.</p>
+
+<h2>Device permissions</h2>
+<p>The app does not request access to your camera, microphone, contacts, location, or any other sensitive permissions.</p>
+
+<h2>Children</h2>
+<p>The app is intended for medical students and adult healthcare professionals and is not directed at children.</p>
+
+<h2>Changes to this policy</h2>
+<p>This page may be updated from time to time. The date at the top reflects the latest revision.</p>
+
+<h2>Contact</h2>
+<p>Privacy questions: <a href="mailto:zavikhorror@gmail.com">zavikhorror@gmail.com</a></p>
+</div>
+
+<footer>ЕКГ-симулятор · Завіднюк В.Ю.</footer>
+
+<script>
+function showLang(lang) {
+ document.getElementById('ua').style.display = lang === 'ua' ? 'block' : 'none';
+ document.getElementById('en').style.display = lang === 'en' ? 'block' : 'none';
+ document.getElementById('btn-ua').classList.toggle('active', lang === 'ua');
+ document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+}
+</script>
+</body>
+</html>

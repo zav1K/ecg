@@ -181,6 +181,27 @@
  border-color: var(--accent);
  box-shadow: 0 2px 5px rgba(13,110,253,0.4);
  }
+ button.rhythm-btn.locked { opacity: 0.6; }
+ button.rhythm-btn.locked::before { content: '🔒 '; }
+ .locked-feature::after { content: ' 🔒'; }
+
+ /* PREMIUM MODAL */
+ #premiumModal .modal-content { max-width: 460px; }
+ .premium-features { list-style: none; padding: 0; margin: 14px 0; }
+ .premium-features li { padding: 6px 0 6px 26px; position: relative; }
+ .premium-features li::before { content: '✓'; position: absolute; left: 0; color: var(--success); font-weight: bold; }
+ .premium-price { text-align: center; font-size: 22px; font-weight: bold; color: var(--info); margin: 14px 0 4px; }
+ .premium-price span { font-size: 12px; color: #adb5bd; font-weight: normal; display: block; }
+ .premium-web-notice {
+ display: none; margin-top: 12px; padding: 10px 12px; font-size: 12.5px;
+ background: rgba(13,202,240,0.08); border: 1px dashed var(--info); border-radius: 4px; color: #ced4da;
+ }
+ .premium-web-notice.shown { display: block; }
+ .modal-secondary-btn {
+ background: transparent; color: #adb5bd; border: 1px solid #495057; padding: 10px;
+ border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 8px; font-size: 13px;
+ }
+ .modal-secondary-btn:hover { background: #343a40; }
 
  /* HR + ВІДВЕДЕННЯ */
  .controls-bottom-row {
@@ -425,6 +446,24 @@
 </div>
 
 
+<div id="premiumModal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="modal-header" id="premiumModalTitle">Повний доступ</div>
+        <div class="modal-body">
+            <p id="premiumModalIntro">Цей стан і ще кілька функцій входять до преміум-бібліотеки.</p>
+            <ul class="premium-features" id="premiumFeaturesList">
+                <li>Усі 25+ станів і ритмів</li>
+                <li>Режим іспиту</li>
+                <li>Стрічка 12 відведень (PNG)</li>
+            </ul>
+            <div class="premium-price" id="premiumPrice">$2.99 <span id="premiumPriceNote">одноразово, назавжди</span></div>
+            <button class="modal-close-btn" onclick="attemptPurchase()" id="premiumUnlockBtn">Розблокувати</button>
+            <button class="modal-secondary-btn" onclick="closePremiumModal()" id="premiumLaterBtn">Може пізніше</button>
+            <div class="premium-web-notice" id="premiumWebNotice">Покупка доступна в мобільному застосунку в Google Play. Веб-версія поки лише для перегляду.</div>
+        </div>
+    </div>
+</div>
+
 <!-- МОДАЛЬНЕ ВІКНО: СТРІЧКА 12 ВІДВЕДЕНЬ -->
 <div id="stripModal" class="strip-modal-overlay hidden" onclick="closeStripOutside(event)">
  <div class="strip-modal-content" id="stripModalContent">
@@ -571,7 +610,8 @@
 
  <div class="department-footer">
  <b>Завіднюк В.Ю.</b><br>
- <span id="footerVersion">Версія 0.8.1 · 2026</span>
+ <span id="footerVersion">Версія 0.8.1 · 2026</span><br>
+ <span id="disclaimerText" style="opacity:0.75;">Навчальний інструмент. Не призначений для клінічної діагностики чи прийняття медичних рішень.</span>
  </div>
 </div>
 
@@ -723,6 +763,14 @@ const i18n = {
   caliperNorm: ' норма', caliperBorder: ' межа', caliperProlonged: ' подовж.',
   instruction: '<b>Підказка:</b> Під час паузи клікніть на будь-який елемент ЕКГ для анатомічної довідки.',
   footerVersion: 'Версія 0.8.1 · 2026',
+  disclaimer: 'Навчальний інструмент. Не призначений для клінічної діагностики чи прийняття медичних рішень.',
+  premiumTitle: 'Повний доступ',
+  premiumIntro: 'Цей стан і ще кілька функцій входять до преміум-бібліотеки.',
+  premiumFeatures: ['Усі 25+ станів і ритмів', 'Режим іспиту', 'Стрічка 12 відведень (PNG)'],
+  premiumPriceNote: 'одноразово, назавжди',
+  premiumUnlockBtn: 'Розблокувати',
+  premiumLaterBtn: 'Може пізніше',
+  premiumWebNotice: 'Покупка доступна в мобільному застосунку в Google Play. Веб-версія поки лише для перегляду.',
  },
  en: {
   appTitle: 'ECG Simulator 0.8.1',
@@ -797,6 +845,14 @@ const i18n = {
   caliperNorm: ' normal', caliperBorder: ' borderline', caliperProlonged: ' prolonged',
   instruction: '<b>Tip:</b> While paused, click any ECG element for an anatomy reference.',
   footerVersion: 'Version 0.8.1 · 2026',
+  disclaimer: 'Educational tool only. Not intended for clinical diagnosis or medical decision-making.',
+  premiumTitle: 'Full Access',
+  premiumIntro: 'This state and a few other features are part of the premium library.',
+  premiumFeatures: ['All 25+ states and rhythms', 'Exam mode', '12-lead strip (PNG export)'],
+  premiumPriceNote: 'one-time, forever',
+  premiumUnlockBtn: 'Unlock',
+  premiumLaterBtn: 'Maybe later',
+  premiumWebNotice: 'Purchase is available in the mobile app on Google Play. The web version is preview-only for now.',
  },
 };
 
@@ -845,6 +901,17 @@ function applyLang() {
  // Footer version
  const fv = document.getElementById('footerVersion');
  if (fv) fv.textContent = L.footerVersion;
+ const dc = document.getElementById('disclaimerText');
+ if (dc) dc.textContent = L.disclaimer;
+ // Premium modal
+ const pmt = document.getElementById('premiumModalTitle'); if (pmt) pmt.textContent = L.premiumTitle;
+ const pmi = document.getElementById('premiumModalIntro'); if (pmi) pmi.textContent = L.premiumIntro;
+ const pmf = document.getElementById('premiumFeaturesList');
+ if (pmf) pmf.innerHTML = L.premiumFeatures.map(f => `<li>${f}</li>`).join('');
+ const ppn = document.getElementById('premiumPriceNote'); if (ppn) ppn.textContent = L.premiumPriceNote;
+ const pub = document.getElementById('premiumUnlockBtn'); if (pub) pub.textContent = L.premiumUnlockBtn;
+ const plb = document.getElementById('premiumLaterBtn'); if (plb) plb.textContent = L.premiumLaterBtn;
+ const pwn = document.getElementById('premiumWebNotice'); if (pwn) pwn.textContent = L.premiumWebNotice;
  // Canvas scale (static but translate)
  const csi = document.querySelector('.canvas-scale-info');
  if (csi) csi.textContent = currentLang==='ua' ? '25 мм/с · 10 мм/мВ' : '25 mm/s · 10 mm/mV';
@@ -869,6 +936,7 @@ function applyLang() {
  }
  // оновити infoBox якщо не в іспиті
  if (!isExamMode) updateInfoBox(currentMode);
+ refreshLockUI();
 }
 
 function toggleLang() {
@@ -1093,7 +1161,51 @@ const LC = {
 const LEAD_NAMES = ['I','II','III','aVR','aVL','aVF','V1','V2','V3','V4','V5','V6'];
 const LEAD_IDX = Object.fromEntries(LEAD_NAMES.map((n,i)=>[n,i]));
 
-// СТАН 
+// PREMIUM (freemium: базові стани безкоштовно, решта + іспит + стрічка - за одноразовий анлок)
+const FREE_MODES = new Set(['normal','sinusarr','afib','pvc','stemi_inf','avblock','pe','wpw']);
+let isPremiumUnlocked = false;
+try { isPremiumUnlocked = localStorage.getItem('ecgSimPremium') === '1'; } catch(e) {}
+
+function isModeLocked(mode) { return !FREE_MODES.has(mode) && !isPremiumUnlocked; }
+
+// Викликається нативним IAP-шаром (Capacitor/Google Play Billing) після успішної покупки
+function unlockPremium() {
+ isPremiumUnlocked = true;
+ try { localStorage.setItem('ecgSimPremium', '1'); } catch(e) {}
+ refreshLockUI();
+ closePremiumModal();
+}
+window.ECG_PREMIUM = { isUnlocked: () => isPremiumUnlocked, unlock: unlockPremium };
+
+function refreshLockUI() {
+ document.querySelectorAll('button.rhythm-btn').forEach(btn => {
+ const mode = btn.id.replace(/^btn-/, '');
+ btn.classList.toggle('locked', isModeLocked(mode));
+ });
+ const examBtn = document.getElementById('examBtn');
+ const stripBtn = document.getElementById('stripBtn');
+ if (examBtn) examBtn.classList.toggle('locked-feature', !isPremiumUnlocked);
+ if (stripBtn) stripBtn.classList.toggle('locked-feature', !isPremiumUnlocked);
+}
+
+function showPremiumModal() {
+ document.getElementById('premiumWebNotice').classList.remove('shown');
+ document.getElementById('premiumModal').classList.remove('hidden');
+}
+function closePremiumModal() {
+ document.getElementById('premiumModal').classList.add('hidden');
+}
+// Native (Capacitor) IAP шар підключає window.ECG_NATIVE_IAP.purchase() пізніше;
+// у веб/PWA-версії покупки ще немає - показуємо чесне повідомлення замість фейкової кнопки
+function attemptPurchase() {
+ if (window.ECG_NATIVE_IAP && typeof window.ECG_NATIVE_IAP.purchase === 'function') {
+ window.ECG_NATIVE_IAP.purchase();
+ } else {
+ document.getElementById('premiumWebNotice').classList.add('shown');
+ }
+}
+
+// СТАН
 let currentMode = 'normal';
 let currentLead = 'II';
 let currentHR = 75;
@@ -1531,6 +1643,7 @@ function setLead(lead, btn) {
 
 // ВИБІР ПАТОЛОГІЇ 
 function setMode(mode, btnEl) {
+ if (isModeLocked(mode)) { showPremiumModal(); return; }
  isExamMode=false;
  doTransition(()=>{
  currentMode=mode;
@@ -1566,6 +1679,7 @@ let quizScore = { correct: 0, total: 0 };
 let quizAnswered = false;
 
 function startExamMode() {
+ if (!isPremiumUnlocked) { showPremiumModal(); return; }
  isExamMode = true;
  quizAnswered = false;
  doTransition(() => {
@@ -1796,8 +1910,9 @@ function drawCaliper() {
  });
 })();
 
-// СТАРТ 
+// СТАРТ
 drawMonitorFrame();
+refreshLockUI();
 
 // PWA: реєстрація Service Worker 
 if ('serviceWorker' in navigator) {
@@ -2022,6 +2137,7 @@ function updateStripMeta() {
 }
 
 function openStrip() {
+ if (!isPremiumUnlocked) { showPremiumModal(); return; }
  const modal = document.getElementById('stripModal');
  modal.classList.remove('hidden');
  updateStripMeta();
