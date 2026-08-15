@@ -10,7 +10,7 @@
  <meta name="apple-mobile-web-app-title" content="ЕКГ">
  <link rel="manifest" href="/manifest.json">
  <link rel="apple-touch-icon" href="/icon-192.png">
- <title>ЕКГ-симулятор 0.9.0</title>
+ <title>ЕКГ-симулятор 0.9.1</title>
  <style>
  :root {
  --bg-color: #2b3035;
@@ -431,9 +431,9 @@
 
 <div id="patchNotesModal" class="modal-overlay">
     <div class="modal-content">
-        <div class="modal-header">Оновлення 0.9.0</div>
+        <div class="modal-header">Оновлення 0.9.1</div>
         <div class="modal-body">
-            <p>Що нового у версії 0.9.0:</p>
+            <p>Що нового у версії 0.9.1:</p>
             <ul>
                 <li><b>Мобільна верстка:</b> монітор ЕКГ, ЧСС і опис стану тепер одразу під шапкою - більше не треба гортати повз усі кнопки, щоб побачити ритм.</li>
                 <li><b>Вибір стану - акордеон:</b> групи кнопок згортаються/розгортаються тапом; на телефоні за замовчуванням розгорнута лише перша група.</li>
@@ -452,7 +452,7 @@
         <div class="modal-body">
             <p id="premiumModalIntro">Цей стан і ще кілька функцій входять до спеціалізованого преміум-паку.</p>
             <ul class="premium-features" id="premiumFeaturesList">
-                <li>3 рідкісні локалізації STEMI (задня, ПШ, бічна)</li>
+                <li>5 рідкісних локалізацій STEMI/старого ІМ (задня, ПШ, бічна)</li>
                 <li>Усі 4 режими кардіостимуляції</li>
                 <li>АВ-блокада II ст. Мобітц II</li>
                 <li>Повний банк питань іспиту (25+ станів)</li>
@@ -488,13 +488,13 @@
  </div>
  <div class="strip-footer-bar">
  <span id="stripFooterLeft">ЕКГ-симулятор · Завіднюк В.Ю.</span>
- <span>Версія 0.9.0 · 2026</span>
+ <span>Версія 0.9.1 · 2026</span>
  </div>
  </div>
 </div>
 
 <div class="container">
- <h1>ЕКГ-симулятор 0.9.0</h1>
+ <h1>ЕКГ-симулятор 0.9.1</h1>
 
  <div class="header-panel">
  <div class="subtitle" id="leadSubtitle">Відведення II | 25 мм/с · 10 мм/мВ</div>
@@ -542,8 +542,8 @@
  <button id="pauseBtn" class="action-btn pause-btn canvas-pause-btn" onclick="togglePause()">Пауза</button>
  </div>
  <div class="canvas-wrapper" id="canvasContainer">
- <canvas id="ecgCanvas"></canvas>
- <canvas id="uiCanvas" title="Під час паузи натисніть на зубець для довідки"></canvas>
+ <canvas id="ecgCanvas" role="img" aria-label="Живий монітор ЕКГ: нормальний синусовий ритм"></canvas>
+ <canvas id="uiCanvas" title="Під час паузи натисніть на зубець для довідки" aria-hidden="true"></canvas>
  <div class="canvas-transition-overlay" id="transitionOverlay"></div>
  </div>
  </div>
@@ -566,7 +566,10 @@
  <details class="control-group" open>
  <summary class="control-group-title">Ішемія / Інфаркт</summary>
  <button class="rhythm-btn" id="btn-nstemi" onclick="setMode('nstemi',this)">NSTEMI / НС</button>
- <button class="rhythm-btn" id="btn-infarct" onclick="setMode('infarct',this)">Постінфарктний (Q)</button>
+ <button class="rhythm-btn" id="btn-infarct" onclick="setMode('infarct',this)">Постінфарктний - Нижній</button>
+ <button class="rhythm-btn" id="btn-infarct_ant" onclick="setMode('infarct_ant',this)">Постінфарктний - Передній</button>
+ <button class="rhythm-btn" id="btn-infarct_lat" onclick="setMode('infarct_lat',this)">Постінфарктний - Бічний</button>
+ <button class="rhythm-btn" id="btn-infarct_post" onclick="setMode('infarct_post',this)">Постінфарктний - Задній</button>
  </details>
  <details class="control-group" open>
  <summary class="control-group-title" id="stemi-sub-label">STEMI за локалізацією</summary>
@@ -612,7 +615,7 @@
 
  <div class="department-footer">
  <b>Завіднюк В.Ю.</b><br>
- <span id="footerVersion">Версія 0.9.0 · 2026</span><br>
+ <span id="footerVersion">Версія 0.9.1 · 2026</span><br>
  <span id="disclaimerText" style="opacity:0.75;">Навчальний інструмент. Не призначений для клінічної діагностики чи прийняття медичних рішень.</span>
  </div>
 </div>
@@ -628,7 +631,7 @@ const uiCtx = uiCanvas.getContext('2d');
 const container = document.getElementById('canvasContainer');
 const transitionOverlay = document.getElementById('transitionOverlay');
 
-const APP_VERSION = '0.9.0';
+const APP_VERSION = '0.9.1';
 function closeModal() {
  document.getElementById('patchNotesModal').classList.add('hidden');
  try { localStorage.setItem('ecgSimSeenVersion', APP_VERSION); } catch(e) {}
@@ -693,7 +696,7 @@ let currentLang = 'ua';
 
 const i18n = {
  ua: {
-  appTitle: 'ЕКГ-симулятор 0.9.0',
+  appTitle: 'ЕКГ-симулятор 0.9.1',
   langBtn: 'EN',
   examBtn: 'Режим іспиту',
   stripBtn: 'Стрічка 12 відв.',
@@ -717,7 +720,10 @@ const i18n = {
   btnLvh: 'Гіпертрофія ЛШ',
   btnPe: 'ТЕЛА',
   btnNstemi: 'NSTEMI / НС',
-  btnInfarct: 'Постінфарктний (Q)',
+  btnInfarct: 'Постінфарктний - Нижній',
+  btnInfarctAnt: 'Постінфарктний - Передній',
+  btnInfarctLat: 'Постінфарктний - Бічний',
+  btnInfarctPost: 'Постінфарктний - Задній',
   btnStemiInf: 'STEMI - Нижній',
   btnStemiAnt: 'STEMI - Передній',
   btnStemiLat: 'STEMI - Бічний',
@@ -752,11 +758,11 @@ const i18n = {
   stripClose: 'Закрити',
   stripRhythm: 'II - ритмова смуга',
   stripFooter: 'ЕКГ-симулятор · Завіднюк В.Ю.',
-  patchTitle: 'Оновлення 0.9.0',
-  patchNew: 'Що нового у версії 0.9.0:',
+  patchTitle: 'Оновлення 0.9.1',
+  patchNew: 'Що нового у версії 0.9.1:',
   patchItems: [
-   '<b>Безкоштовний доступ розширено:</b> 17 із 25 станів і базовий режим іспиту тепер доступні без покупки.',
-   '<b>Спеціалізований преміум-пак:</b> рідкісні локалізації STEMI, усі режими кардіостимуляції, повний банк питань іспиту та експорт стрічки 12 відведень - одноразова покупка, без підписки.',
+   '<b>Нові стани:</b> постінфарктні Q-хвильові зміни за трьома новими локалізаціями - передньою, бічною, задньою.',
+   '<b>Тимчасово все безкоштовно:</b> поки в застосунку не запущені покупки, усі стани, режим іспиту й стрічка 12 відведень доступні без обмежень. Найближчим часом частина контенту (рідкісні локалізації, кардіостимулятори, повний банк питань іспиту, стрічка) стане платною - одноразова покупка, без підписки.',
    '<b>Виправлено:</b> підказки на моніторі під час Мобітц I/II, стрибок кривої ШЕ при високому ЧСС, збій підказок після ресайзу на паузі.',
    '<b>Додано дисклеймер:</b> застосунок - навчальний інструмент, не для клінічної діагностики.',
   ],
@@ -765,18 +771,18 @@ const i18n = {
   caliperMv: mv => `↕ Ампл: ${mv} мВ`,
   caliperNorm: ' норма', caliperBorder: ' межа', caliperProlonged: ' подовж.',
   instruction: '<b>Підказка:</b> Під час паузи клікніть на будь-який елемент ЕКГ для анатомічної довідки.',
-  footerVersion: 'Версія 0.9.0 · 2026',
+  footerVersion: 'Версія 0.9.1 · 2026',
   disclaimer: 'Навчальний інструмент. Не призначений для клінічної діагностики чи прийняття медичних рішень.',
   premiumTitle: 'Повний доступ',
   premiumIntro: 'Цей стан і ще кілька функцій входять до спеціалізованого преміум-паку.',
-  premiumFeatures: ['3 рідкісні локалізації STEMI (задня, ПШ, бічна)', 'Усі 4 режими кардіостимуляції', 'АВ-блокада II ст. Мобітц II', 'Повний банк питань іспиту (25+ станів)', 'Стрічка 12 відведень (PNG)'],
+  premiumFeatures: ['5 рідкісних локалізацій STEMI/старого ІМ (задня, ПШ, бічна)', 'Усі 4 режими кардіостимуляції', 'АВ-блокада II ст. Мобітц II', 'Повний банк питань іспиту (25+ станів)', 'Стрічка 12 відведень (PNG)'],
   premiumPriceNote: 'одноразово, назавжди',
   premiumUnlockBtn: 'Розблокувати',
   premiumLaterBtn: 'Може пізніше',
   premiumWebNotice: 'Покупка доступна в мобільному застосунку в Google Play. Веб-версія поки лише для перегляду.',
  },
  en: {
-  appTitle: 'ECG Simulator 0.9.0',
+  appTitle: 'ECG Simulator 0.9.1',
   langBtn: 'UA',
   examBtn: 'Exam Mode',
   stripBtn: '12-Lead Strip',
@@ -800,7 +806,10 @@ const i18n = {
   btnLvh: 'LV Hypertrophy',
   btnPe: 'Pulmonary Embolism',
   btnNstemi: 'NSTEMI / UA',
-  btnInfarct: 'Post-MI (Q waves)',
+  btnInfarct: 'Post-MI - Inferior',
+  btnInfarctAnt: 'Post-MI - Anterior',
+  btnInfarctLat: 'Post-MI - Lateral',
+  btnInfarctPost: 'Post-MI - Posterior',
   btnStemiInf: 'STEMI - Inferior',
   btnStemiAnt: 'STEMI - Anterior',
   btnStemiLat: 'STEMI - Lateral',
@@ -835,11 +844,11 @@ const i18n = {
   stripClose: 'Close',
   stripRhythm: 'II - rhythm strip',
   stripFooter: 'ECG Simulator · Zavidnyuk V.Yu.',
-  patchTitle: 'Update 0.9.0',
-  patchNew: "What's new in 0.9.0:",
+  patchTitle: 'Update 0.9.1',
+  patchNew: "What's new in 0.9.1:",
   patchItems: [
-   '<b>Free tier expanded:</b> 17 of 25 states and basic exam mode are now free, no purchase needed.',
-   '<b>Specialist premium pack:</b> rare STEMI locations, all pacemaker modes, the full exam question bank, and 12-lead strip export - one-time purchase, no subscription.',
+   '<b>New states:</b> post-infarction Q-wave changes for three new locations - anterior, lateral, and posterior.',
+   '<b>Everything is temporarily free:</b> until in-app purchases go live, every state, exam mode, and the 12-lead strip are fully unlocked. Soon a part of the content (rare locations, pacemaker modes, the full exam question bank, strip export) will become paid - a one-time purchase, no subscription.',
    '<b>Fixed:</b> anatomy hints during Mobitz I/II, a PVC waveform glitch at high heart rates, and broken hints after a resize while paused.',
    '<b>Added a disclaimer:</b> this app is an educational tool, not for clinical diagnosis.',
   ],
@@ -848,11 +857,11 @@ const i18n = {
   caliperMv: mv => `↕ Ampl: ${mv} mV`,
   caliperNorm: ' normal', caliperBorder: ' borderline', caliperProlonged: ' prolonged',
   instruction: '<b>Tip:</b> While paused, click any ECG element for an anatomy reference.',
-  footerVersion: 'Version 0.9.0 · 2026',
+  footerVersion: 'Version 0.9.1 · 2026',
   disclaimer: 'Educational tool only. Not intended for clinical diagnosis or medical decision-making.',
   premiumTitle: 'Full Access',
   premiumIntro: 'This state and a few other features are part of the specialist premium pack.',
-  premiumFeatures: ['3 rare STEMI locations (posterior, RV, lateral)', 'All 4 pacemaker modes', '2nd-degree AV block, Mobitz II', 'Full exam question bank (25+ states)', '12-lead strip (PNG export)'],
+  premiumFeatures: ['5 rare STEMI/old-MI locations (posterior, RV, lateral)', 'All 4 pacemaker modes', '2nd-degree AV block, Mobitz II', 'Full exam question bank (25+ states)', '12-lead strip (PNG export)'],
   premiumPriceNote: 'one-time, forever',
   premiumUnlockBtn: 'Unlock',
   premiumLaterBtn: 'Maybe later',
@@ -880,6 +889,7 @@ function applyLang() {
  const btns = {
   'btn-normal':L.btnNormal,'btn-lvh':L.btnLvh,'btn-pe':L.btnPe,
   'btn-nstemi':L.btnNstemi,'btn-infarct':L.btnInfarct,
+ 'btn-infarct_ant':L.btnInfarctAnt,'btn-infarct_lat':L.btnInfarctLat,'btn-infarct_post':L.btnInfarctPost,
   'btn-stemi_inf':L.btnStemiInf,'btn-stemi_ant':L.btnStemiAnt,
   'btn-stemi_lat':L.btnStemiLat,'btn-stemi_post':L.btnStemiPost,'btn-stemi_rv':L.btnStemiRv,
   'btn-afib':L.btnAfib,'btn-pvc':L.btnPvc,'btn-vt':L.btnVt,
@@ -960,7 +970,10 @@ const ecgData = {
   stemi_post: { hr:82, badge:'STEMI · Задній ', badgeClass:'danger', title:'STEMI - Задній (постеріорний) ІМ', text:' Найчастіше пропускають! Немає прямої елевації ST у стандартних відведеннях. Шукайте дзеркальну картину у V1-V3: горизонтальна депресія ST + домінантний R (>S) + позитивний T - це «відзеркалена» елевація задньої стінки. Часто супроводжує нижній ІМ. Для підтвердження - відведення V7-V9.' },
   stemi_rv:   { hr:80, badge:'STEMI · Правий шлуночок ', badgeClass:'danger', title:'STEMI - Інфаркт правого шлуночка', text:'Оклюзія проксимального відділу ПКА. Картина нижнього ІМ (елевація II, III, aVF) + елевація ST у V1 замість реципрокної депресії. Ознаки: ST III > ST II; елевація V1 >= елевації II. Підтвердження - V4R (елевація >1 мм).' },
   nstemi : { hr:80, badge:'Невідкладний стан', badgeClass:'danger', title:'Гострий коронарний синдром (NSTEMI)', text:'Горизонтальна або косонизхідна депресія ST та глибокий негативний симетричний T - переважно у V4–V6, I, aVL. Без патологічного Q.' },
-  infarct: { hr:70, badge:'Рубцеві зміни', badgeClass:'warning', title:'Постінфарктний кардіосклероз', text:'Патологічний Q (ширина >0.03 с, амплітуда >1/4 R). Виражений у нижніх відведеннях (II, III, aVF). Інверсія T в тих же зонах.' },
+  infarct: { hr:70, badge:'Рубцеві зміни · Нижній', badgeClass:'warning', title:'Постінфарктний кардіосклероз - Нижній', text:'Патологічний Q (ширина >0.03 с, амплітуда >1/4 R). Виражений у нижніх відведеннях (II, III, aVF). Інверсія T в тих же зонах.' },
+  infarct_ant: { hr:70, badge:'Рубцеві зміни · Передній', badgeClass:'warning', title:'Постінфарктний кардіосклероз - Передній', text:'Патологічний Q (нерідко QS) у V1-V4, іноді з переходом на I, aVL. Ознака перенесеного переднього ІМ. Без гострих змін ST - на відміну від STEMI, тут ST на ізолінії.' },
+  infarct_lat: { hr:70, badge:'Рубцеві зміни · Бічний', badgeClass:'warning', title:'Постінфарктний кардіосклероз - Бічний', text:'Патологічний Q у I, aVL, V5-V6. Ознака перенесеного бічного ІМ, часто поєднується з переднім. Морфологія стабільна, без динаміки ST.' },
+  infarct_post: { hr:70, badge:'Рубцеві зміни · Задній', badgeClass:'warning', title:'Постінфарктний кардіосклероз - Задній', text:'Дзеркальна картина у V1-V3: домінантний R (>S) та високий позитивний T замість патологічного Q - задню стінку не видно напряму в 12 стандартних відведеннях. Без депресії ST, на відміну від гострого заднього STEMI.' },
   afib : { hr:110, badge:'Порушення ритму', badgeClass:'warning', title:'Фібриляція передсердь', text:'Відсутність зубців P, хвилі фібриляції (f), абсолютно неправильний ритм шлуночків. Повзунком можна змінювати середню частоту відповіді шлуночків.' },
   pvc : { hr:75, badge:'Порушення ритму', badgeClass:'warning', title:'Шлуночкова екстрасистолія', text:'Передчасний широкий деформований QRS з повною компенсаторною паузою. Морфологія екстрасистоли змінюється залежно від відведення.' },
   vt : { hr:155, badge:'Невідкладний стан', badgeClass:'danger', title:'Шлуночкова тахікардія (VT)', text:'Послідовність широких деформованих шлуночкових комплексів. P не диференціюються. Напрямок комплексів протилежний у грудних і кінцівкових відведеннях.' },
@@ -987,7 +1000,10 @@ const ecgData = {
   stemi_post: { hr:82, badge:'STEMI · Posterior ', badgeClass:'danger', title:'STEMI - Posterior MI', text:' Most commonly missed STEMI! No direct ST elevation in standard leads. Look for the mirror pattern in V1-V3: horizontal ST depression + dominant R (>S) + upright T - this is "reflected" posterior wall elevation. Often accompanies inferior MI. Confirm with posterior leads V7-V9.' },
   stemi_rv:   { hr:80, badge:'STEMI · Right Ventricle ', badgeClass:'danger', title:'STEMI - Right Ventricular Infarction', text:'Proximal RCA occlusion. Shows inferior MI pattern (ST elevation in II, III, aVF) + ST elevation in V1 instead of reciprocal depression. Key signs: ST in III > ST in II; V1 elevation >= lead II elevation. Confirm with V4R (elevation >1 mm).' },
   nstemi : { hr:80, badge:'Emergency', badgeClass:'danger', title:'Acute Coronary Syndrome (NSTEMI)', text:'Horizontal or downsloping ST depression and deep symmetric T-wave inversion - predominantly in V4–V6, I, aVL. No pathological Q waves.' },
-  infarct: { hr:70, badge:'Scar', badgeClass:'warning', title:'Post-Infarction Cardiosclerosis', text:'Pathological Q wave (width >0.03 s, amplitude >1/4 R). Most prominent in inferior leads (II, III, aVF). T-wave inversion in the same distribution.' },
+  infarct: { hr:70, badge:'Scar · Inferior', badgeClass:'warning', title:'Post-Infarction Cardiosclerosis - Inferior', text:'Pathological Q wave (width >0.03 s, amplitude >1/4 R). Most prominent in inferior leads (II, III, aVF). T-wave inversion in the same distribution.' },
+  infarct_ant: { hr:70, badge:'Scar · Anterior', badgeClass:'warning', title:'Post-Infarction Cardiosclerosis - Anterior', text:'Pathological Q (often QS) in V1-V4, sometimes extending to I, aVL. Marker of a prior anterior MI. No acute ST changes - unlike STEMI, ST stays isoelectric.' },
+  infarct_lat: { hr:70, badge:'Scar · Lateral', badgeClass:'warning', title:'Post-Infarction Cardiosclerosis - Lateral', text:'Pathological Q in I, aVL, V5-V6. Marker of a prior lateral MI, often combined with anterior. Morphology is stable, no ST dynamics.' },
+  infarct_post: { hr:70, badge:'Scar · Posterior', badgeClass:'warning', title:'Post-Infarction Cardiosclerosis - Posterior', text:'Mirror pattern in V1-V3: dominant R (>S) and a tall upright T instead of a pathological Q - the posterior wall is never seen directly on the standard 12 leads. No ST depression, unlike acute posterior STEMI.' },
   afib : { hr:110, badge:'Arrhythmia', badgeClass:'warning', title:'Atrial Fibrillation', text:'Absent P waves, fibrillation (f) waves, irregularly irregular ventricular response. Use the HR slider to adjust mean ventricular rate.' },
   pvc : { hr:75, badge:'Arrhythmia', badgeClass:'warning', title:'Premature Ventricular Contractions', text:'Premature, wide, bizarre QRS with a full compensatory pause. Morphology changes by lead.' },
   vt : { hr:155, badge:'Emergency', badgeClass:'danger', title:'Ventricular Tachycardia (VT)', text:'A run of wide, deformed ventricular complexes. P waves are not discernible. QRS axis is discordant in precordial vs limb leads.' },
@@ -1140,7 +1156,57 @@ const LC = {
   {p:0.5, qrs:0.8, t:0.8, st:0  }, // V6  - норма
  ],
  nstemi: [{p:0.7,qrs:0.7, t:-0.6,st:14},{p:1.0, qrs:1.0, t:1.0, st:0 },{p:0.4,qrs:0.4, t:0.4, st:0 },{p:-0.7,qrs:-0.7, t:-0.5,st:0 },{p:0.4, qrs:0.4, t:-0.5,st:10},{p:0.8, qrs:0.8, t:0.5, st:5 },{p:-0.2,qrs:-0.5, t:-0.3,st:0 },{p:0.2, qrs:-0.3, t:-0.4,st:8 },{p:0.4,qrs:0.5, t:-0.5,st:14},{p:0.5,qrs:0.9, t:-0.7,st:18},{p:0.5,qrs:1.0, t:-0.7,st:16},{p:0.5,qrs:0.8, t:-0.5,st:12}],
+ // Постінфарктний кардіосклероз - нижній (за замовчуванням "infarct"): див. нижче
+ // ще 3 локалізації старого Q-хвильового ІМ, за аналогією до STEMI-локалізацій -
+ // той самий рендер-патерн (домінантний патологічний Q), але st:0 усюди (без
+ // гострого зсуву ST - зміни хронічні/загоєні)
  infarct: [{p:0.7,qrs:0.6, t:-0.4,st:0 },{p:1.0, qrs:1.0, t:1.0, st:0 },{p:0.6,qrs:0.9, t:-0.5,st:0 },{p:-0.7,qrs:-0.7, t:-0.5,st:0 },{p:0.4, qrs:0.4, t:-0.4,st:0 },{p:0.9, qrs:0.9, t:-0.4,st:0 },{p:-0.2,qrs:-0.5, t:-0.3,st:0 },{p:0.2, qrs:-0.3, t:0.3, st:0 },{p:0.4,qrs:0.5, t:0.5, st:0 },{p:0.5,qrs:0.8, t:0.7, st:0 },{p:0.5,qrs:0.9, t:0.8, st:0 },{p:0.5,qrs:0.8, t:0.7, st:0 }],
+ // Постінфарктний - передній: патологічний Q у V1-V4 (аналог stemi_ant)
+ infarct_ant: [
+  {p:0.7,qrs:0.8, t:0.4, st:0 }, // I   - легка задіяність
+  {p:1.0,qrs:1.0, t:0.8, st:0 }, // II  - норма
+  {p:0.5,qrs:0.5, t:0.5, st:0 }, // III - норма
+  {p:-0.8,qrs:-0.7,t:-0.5,st:0 }, // aVR - норма
+  {p:0.3, qrs:0.5, t:0.2, st:0 }, // aVL - легка задіяність
+  {p:0.85,qrs:0.8, t:0.7, st:0 }, // aVF - норма
+  {p:-0.2,qrs:-1.3,t:-0.4,st:0 }, // V1  - патологічний Q ★
+  {p:0.2, qrs:-0.9,t:-0.5,st:0 }, // V2  - патологічний Q ★
+  {p:0.3, qrs:0.7, t:-0.4,st:0 }, // V3  - патологічний Q ★
+  {p:0.5, qrs:1.2, t:-0.2,st:0 }, // V4  - перехідна зона
+  {p:0.5, qrs:1.0, t:0.7, st:0 }, // V5  - норма
+  {p:0.5, qrs:0.8, t:0.6, st:0 }, // V6  - норма
+ ],
+ // Постінфарктний - бічний: патологічний Q у I, aVL, V5-V6 (аналог stemi_lat)
+ infarct_lat: [
+  {p:0.7, qrs:1.1, t:-0.4,st:0 }, // I   - патологічний Q ★
+  {p:1.0, qrs:0.9, t:0.7, st:0 }, // II  - норма
+  {p:0.5, qrs:0.5, t:0.5, st:0 }, // III - норма
+  {p:-0.8,qrs:-0.7,t:-0.5,st:0 }, // aVR - норма
+  {p:0.3, qrs:0.7, t:-0.4,st:0 }, // aVL - патологічний Q ★
+  {p:0.85,qrs:0.8, t:0.7, st:0 }, // aVF - норма
+  {p:-0.2,qrs:-0.7,t:0.3, st:0 }, // V1  - норма
+  {p:0.2, qrs:-0.4,t:0.4, st:0 }, // V2  - норма
+  {p:0.3, qrs:0.3, t:0.6, st:0 }, // V3  - норма
+  {p:0.5, qrs:0.9, t:0.8, st:0 }, // V4  - норма
+  {p:0.5, qrs:1.4, t:-0.3,st:0 }, // V5  - патологічний Q ★
+  {p:0.5, qrs:1.2, t:-0.4,st:0 }, // V6  - патологічний Q ★
+ ],
+ // Постінфарктний - задній: дзеркальний патерн у V1-V3 (домінантний R, високий T),
+ // st:0 усюди - на відміну від stemi_post тут немає гострої депресії ST
+ infarct_post: [
+  {p:0.7,qrs:0.7, t:0.6, st:0 }, // I   - норма
+  {p:1.0,qrs:0.9, t:0.9, st:0 }, // II  - норма
+  {p:0.6,qrs:0.7, t:0.7, st:0 }, // III - норма
+  {p:-0.8,qrs:-0.7,t:-0.6,st:0 }, // aVR - норма
+  {p:0.3, qrs:0.3, t:0.3, st:0 }, // aVL - норма
+  {p:0.9, qrs:0.9, t:0.9, st:0 }, // aVF - норма
+  {p:-0.2,qrs:1.3, t:1.4, st:0, post:true }, // V1  - домінантний R ★
+  {p:0.2, qrs:1.1, t:1.3, st:0, post:true }, // V2  - домінантний R ★
+  {p:0.3, qrs:0.8, t:1.0, st:0, post:true }, // V3  - домінантний R ★
+  {p:0.5, qrs:0.8, t:0.9, st:0 }, // V4  - перехідна зона
+  {p:0.5, qrs:0.9, t:0.8, st:0 }, // V5  - норма
+  {p:0.5, qrs:0.8, t:0.7, st:0 }, // V6  - норма
+ ],
  afib: [{p:0.0,qrs:0.7, t:0.7, st:0 },{p:0.0, qrs:1.0, t:1.0, st:0 },{p:0.0,qrs:0.5, t:0.5, st:0 },{p:0.0, qrs:-0.8, t:-0.7,st:0 },{p:0.0, qrs:0.3, t:0.3, st:0 },{p:0.0, qrs:0.8, t:0.8, st:0 },{p:0.0, qrs:-0.7, t:-0.3,st:0 },{p:0.0, qrs:-0.4, t:0.3, st:0 },{p:0.0,qrs:0.3, t:0.5, st:0 },{p:0.0,qrs:0.9, t:0.8, st:0 },{p:0.0,qrs:1.0, t:0.9, st:0 },{p:0.0,qrs:0.8, t:0.7, st:0 }],
  pvc: [{p:0.7,qrs:0.7, t:0.7, st:0 },{p:1.0, qrs:1.0, t:1.0, st:0 },{p:0.5,qrs:0.5, t:0.5, st:0 },{p:-0.8,qrs:-0.8, t:-0.7,st:0 },{p:0.3, qrs:0.3, t:0.3, st:0 },{p:0.9, qrs:0.9, t:0.8, st:0 },{p:-0.2,qrs:-1.1, t:-0.6,st:0 },{p:0.2, qrs:-0.8, t:-0.5,st:0 },{p:0.4,qrs:0.4, t:0.5, st:0 },{p:0.5,qrs:1.0, t:0.9, st:0 },{p:0.5,qrs:1.1, t:1.0, st:0 },{p:0.5,qrs:0.9, t:0.8, st:0 }],
  vt: [{p:0.0,qrs:0.8, t:0.7, st:0 },{p:0.0, qrs:1.0, t:1.0, st:0 },{p:0.0,qrs:0.6, t:0.6, st:0 },{p:0.0, qrs:-0.9, t:-0.8,st:0 },{p:0.0, qrs:0.4, t:0.4, st:0 },{p:0.0, qrs:0.8, t:0.7, st:0 },{p:0.0, qrs:-1.1, t:-0.8,st:0 },{p:0.0, qrs:-0.9, t:-0.7,st:0 },{p:0.0,qrs:-0.5, t:-0.4,st:0 },{p:0.0,qrs:0.5, t:0.5, st:0 },{p:0.0,qrs:0.9, t:0.8, st:0 },{p:0.0,qrs:1.0, t:0.9, st:0 }],
@@ -1166,13 +1232,19 @@ const LEAD_NAMES = ['I','II','III','aVR','aVL','aVF','V1','V2','V3','V4','V5','V
 const LEAD_IDX = Object.fromEntries(LEAD_NAMES.map((n,i)=>[n,i]));
 
 // PREMIUM (freemium: більшість станів безкоштовно; преміум - спеціалізований пак
-// (3 рідкісні локалізації STEMI, Мобітц II, усі 4 кардіостимулятори) + повний банк
-// питань іспиту (безкоштовно - тільки по безкоштовних станах) + експорт стрічки)
-const FREE_MODES = new Set(['normal','lvh','pe','nstemi','infarct','stemi_inf','stemi_ant','afib','pvc','vt','avblock','lbbb','hyperk','mobitz1','wpw','sinusarr','pericarditis']);
+// (5 рідкісних локалізацій STEMI/старого ІМ, Мобітц II, усі 4 кардіостимулятори) +
+// повний банк питань іспиту (безкоштовно - тільки по безкоштовних станах) + стрічка)
+const FREE_MODES = new Set(['normal','lvh','pe','nstemi','infarct','infarct_ant','stemi_inf','stemi_ant','afib','pvc','vt','avblock','lbbb','hyperk','mobitz1','wpw','sinusarr','pericarditis']);
+
+// ЧАСОВО: весь веб-сайт безкоштовний до запуску покупок у Google Play (див. патч-ноути) -
+// вся інфраструктура paywall нижче лишається робочою, просто обходиться цим прапорцем
+const TEMP_ALL_FREE = true;
+
 let isPremiumUnlocked = false;
 try { isPremiumUnlocked = localStorage.getItem('ecgSimPremium') === '1'; } catch(e) {}
 
-function isModeLocked(mode) { return !FREE_MODES.has(mode) && !isPremiumUnlocked; }
+function isEffectivelyPremium() { return TEMP_ALL_FREE || isPremiumUnlocked; }
+function isModeLocked(mode) { return !FREE_MODES.has(mode) && !isEffectivelyPremium(); }
 
 // Викликається нативним IAP-шаром (Capacitor/Google Play Billing) після успішної покупки
 function unlockPremium() {
@@ -1190,7 +1262,7 @@ function refreshLockUI() {
  });
  // Режим іспиту тепер безкоштовний (обмежений лише пулом питань) - лока не показуємо
  const stripBtn = document.getElementById('stripBtn');
- if (stripBtn) stripBtn.classList.toggle('locked-feature', !isPremiumUnlocked);
+ if (stripBtn) stripBtn.classList.toggle('locked-feature', !isEffectivelyPremium());
 }
 
 function showPremiumModal() {
@@ -1282,7 +1354,7 @@ function getBaseComplex(mode, cx, lc) {
   dy -= sharp(cx,52,10,60*q);
   if (st && cx>60 && cx<120) dy += st*bump(cx,60,60,1,0.5);
  }
- } else if (mode==='stemi_post') {
+ } else if (mode==='stemi_post' || mode==='infarct_post') {
  // Задній STEMI - у V1-V3 домінантний R + горизонтальна депресія ST (дзеркало)
  // st > 0 означає депресію (вже закодовано у LC)
  dy -= bump(cx,10,25,10*p);
@@ -1307,7 +1379,7 @@ function getBaseComplex(mode, cx, lc) {
  dy += sharp(cx,62,6,20*Math.abs(q));
  if (cx>68 && cx<95) dy += st;
  dy += bump(cx,95,40,30*t,1);
- } else if (mode==='infarct') {
+ } else if (mode==='infarct' || mode==='infarct_ant' || mode==='infarct_lat') {
  dy -= bump(cx,10,25,10*p);
  dy += sharp(cx,45,16,45*q);
  dy -= sharp(cx,61,8,25*q);
@@ -1401,7 +1473,7 @@ function drawMonitorFrame() {
  let y=baselineY, label='TP';
  const cycle=15000/currentHR, cx=globalTime%cycle, lc=getLc();
 
- if (['normal','lvh','pe','stemi_inf','stemi_ant','stemi_lat','stemi_post','stemi_rv','nstemi','infarct','lbbb','hyperk','wpw','pericarditis'].includes(currentMode)) {
+ if (['normal','lvh','pe','stemi_inf','stemi_ant','stemi_lat','stemi_post','stemi_rv','nstemi','infarct','infarct_ant','infarct_lat','infarct_post','lbbb','hyperk','wpw','pericarditis'].includes(currentMode)) {
  const lx = cycle<140 ? cx*(140/cycle) : cx;
  y += getBaseComplex(currentMode, lx, lc);
  label = getStdLabel(lx);
@@ -1673,6 +1745,8 @@ function updateInfoBox(mode) {
  const d=ecgData[currentLang][mode];
  document.getElementById('descTitle').innerHTML=`<span class="badge ${d.badgeClass}" id="descBadge">${d.badge}</span> ${d.title}`;
  document.getElementById('descTextContainer').innerHTML=`<p id="descText">${d.text}</p>`;
+ const liveLabel = currentLang==='ua' ? `Живий монітор ЕКГ: ${d.title}` : `Live ECG monitor: ${d.title}`;
+ canvas.setAttribute('aria-label', liveLabel);
 }
 
 // HR 
@@ -1686,7 +1760,7 @@ let quizAnswered = false;
 // Безкоштовно - іспит лише по безкоштовних станах; преміум відкриває повний банк (усі 25+)
 function examModePool() {
  const all = Object.keys(ecgData[currentLang]);
- return isPremiumUnlocked ? all : all.filter(m => FREE_MODES.has(m));
+ return isEffectivelyPremium() ? all : all.filter(m => FREE_MODES.has(m));
 }
 
 function startExamMode() {
@@ -1733,7 +1807,7 @@ function renderQuizPanel() {
  document.getElementById('descTitle').innerHTML =
  `${L.quizTitle} ${scoreHtml}`;
 
- const upsell = !isPremiumUnlocked
+ const upsell = !isEffectivelyPremium()
  ? `<p style="color:#6c757d;font-size:12px;margin:0 0 8px;cursor:pointer;" onclick="showPremiumModal()">${L.quizFreeNote}</p>`
  : '';
  document.getElementById('descTextContainer').innerHTML = `
@@ -1944,7 +2018,7 @@ const STRIP_LEADS = ['I','II','III','aVR','aVL','aVF','V1','V2','V3','V4','V5','
 // Генерує Y-зміщення для стрічки через getBaseComplex (ідентична морфологія з монітором)
 function stripGetDY(mode, cx, lc, cycleLen) {
  const lx = cycleLen < 140 ? cx * (140 / cycleLen) : cx;
- if (['normal','lvh','pe','stemi_inf','stemi_ant','stemi_lat','stemi_post','stemi_rv','nstemi','infarct','lbbb','hyperk','wpw','pericarditis'].includes(mode)) {
+ if (['normal','lvh','pe','stemi_inf','stemi_ant','stemi_lat','stemi_post','stemi_rv','nstemi','infarct','infarct_ant','infarct_lat','infarct_post','lbbb','hyperk','wpw','pericarditis'].includes(mode)) {
  return getBaseComplex(mode, lx, lc);
  }
  if (mode === 'pvc') {
@@ -2151,7 +2225,7 @@ function updateStripMeta() {
 }
 
 function openStrip() {
- if (!isPremiumUnlocked) { showPremiumModal(); return; }
+ if (!isEffectivelyPremium()) { showPremiumModal(); return; }
  const modal = document.getElementById('stripModal');
  modal.classList.remove('hidden');
  updateStripMeta();
