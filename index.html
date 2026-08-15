@@ -9,6 +9,7 @@
  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
  <meta name="apple-mobile-web-app-title" content="ЕКГ">
  <link rel="manifest" href="/manifest.json">
+ <link rel="apple-touch-icon" href="/icon-192.png">
  <title>ЕКГ-симулятор 0.8.1</title>
  <style>
  :root {
@@ -620,6 +621,7 @@ window.addEventListener('resize', () => {
  if (isPaused) {
  const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
  const oldW = canvas.width, oldH = canvas.height;
+ const oldHitMap = hitMap;
  resizeCanvas();
  // Відновлюємо збережений знімок (масштабуємо якщо потрібно)
  const tmp = document.createElement('canvas');
@@ -627,7 +629,14 @@ window.addEventListener('resize', () => {
  tmp.getContext('2d').putImageData(snapshot, 0, 0);
  ctx.drawImage(tmp, 0, 0, oldW, oldH, 0, 0, canvas.width, canvas.height);
  baselineY = canvas.height / 2 + 10;
+ // Ремапимо hitMap під новий масштаб (а не занулюємо) - інакше клік по ЕКГ
+ // після ресайзу під час паузи ніколи не знаходив би підказку
+ const scaleX = oldW / canvas.width, scaleY = canvas.height / oldH;
  hitMap = new Array(canvas.width);
+ for (let i = 0; i < canvas.width; i++) {
+ const old = oldHitMap[Math.round(i * scaleX)];
+ if (old) hitMap[i] = { label: old.label, y: old.y * scaleY };
+ }
  } else {
  cancelAnimationFrame(animationId);
  resizeCanvas(); resetMonitor();
@@ -1097,8 +1106,6 @@ let animationId;
 let isPaused = false;
 let isExamMode = false;
 let afibTimer = 0, afibDrawing = false, afibCx = 0;
-// СТАН СТИМУЛЯТОРА 
-let pacePhase = 0; // фаза всередині циклу стимулятора (0..cycle)
 
 // МАТЕМАТИКА 
 function bump(x, s, w, h, sk=1) {
@@ -1116,7 +1123,9 @@ function getBaseComplex(mode, cx, lc) {
  const {p, qrs:q, t, st} = lc;
  let dy = 0;
 
- if (['normal','pvc','afib','avblock'].includes(mode)) {
+ // pvc/afib/avblock мають власний таймінг і малюються окремо (drawMonitorFrame/stripGetDY) -
+ // сюди вони ніколи не потрапляють, тому тут лишається тільки 'normal'
+ if (mode === 'normal') {
  dy -= bump(cx,10,25,10*p);
  dy += sharp(cx,48,4,4*Math.abs(q));
  dy -= sharp(cx,52,8,80*q);
@@ -1280,7 +1289,10 @@ function drawMonitorFrame() {
  y += getBaseComplex(currentMode, lx, lc);
  label = getStdLabel(lx);
  } else if (currentMode==='pvc') {
- const pvcCycle = cycle * 1.9;
+ // pvcCycle має вмістити і нормальні удари (cycle*0.85), і весь розширений
+ // ектопічний комплекс (до 150px) - інакше при високому ЧСС комплекс обрізається
+ // й крива стрибає посеред T-хвилі на наступний цикл
+ const pvcCycle = Math.max(cycle * 1.9, cycle * 0.85 + 170);
  const px = globalTime % pvcCycle;
  if (px < cycle * 0.85) {
  const lx = cycle < 140 ? (px / (cycle * 0.85)) * 140 : px;
@@ -1342,7 +1354,7 @@ function drawMonitorFrame() {
  const pcx = gt % cycle;
  const plx = cycle<140 ? pcx*(140/cycle) : pcx;
  y -= bump(plx,10,25,10*lc.p);
- label = 'P';
+ label = (plx>=5 && plx<40) ? 'P' : 'TP';
  if (beatIdx < 3) {
  const prDelays = [cycle*0.20, cycle*0.32, cycle*0.46];
  const qOff = pcx - prDelays[beatIdx];
@@ -1363,7 +1375,7 @@ function drawMonitorFrame() {
  const pcx = gt % cycle;
  const plx = cycle<140 ? pcx*(140/cycle) : pcx;
  y -= bump(plx,10,25,10*lc.p);
- label = 'P';
+ label = (plx>=5 && plx<40) ? 'P' : 'TP';
  if (beatIdx === 0) {
  const qOff = pcx - cycle*0.26;
  if (qOff>=0 && qOff<cycle*0.5) {
@@ -1570,14 +1582,24 @@ function startExamMode() {
  });
 }
 
+// Fisher-Yates - sort(() => Math.random()-0.5) не дає рівномірного розподілу
+function shuffleArray(arr) {
+ const a = arr.slice();
+ for (let i = a.length - 1; i > 0; i--) {
+ const j = Math.floor(Math.random() * (i + 1));
+ [a[i], a[j]] = [a[j], a[i]];
+ }
+ return a;
+}
+
 function renderQuizPanel() {
  quizAnswered = false;
  const correct = currentMode;
  const d = ecgData[currentLang][correct];
 
  const allModes = Object.keys(ecgData[currentLang]).filter(m => m !== correct);
- const shuffled = allModes.sort(() => Math.random() - 0.5).slice(0, 3);
- const options = [correct, ...shuffled].sort(() => Math.random() - 0.5);
+ const shuffled = shuffleArray(allModes).slice(0, 3);
+ const options = shuffleArray([correct, ...shuffled]);
 
  const L = t();
  const scoreHtml = quizScore.total > 0
@@ -1677,7 +1699,6 @@ function resetMonitor() {
  ctx.clearRect(0,0,canvas.width,canvas.height);
  globalTime=0; renderX=0; prevY=baselineY;
  afibTimer=0; afibDrawing=false;
- pacePhase=0;
  hitMap=new Array(canvas.width);
  if (!isExamMode) { const dt=document.getElementById('descText'); if(dt) dt.innerHTML=ecgData[currentLang][currentMode].text; }
 }
@@ -1987,8 +2008,7 @@ function updateStripMeta() {
  const d = ecgData[currentLang][currentMode];
  const L = t();
  const hr = parseInt(document.getElementById('hrDisplay').textContent) || d.hr;
- const qrs = ['vvi','ddd','crt','lbbb','vt','wpw'].includes(currentMode) ? '>120' :
- ['aai'].includes(currentMode) ? '90' : '90';
+ const qrs = ['vvi','ddd','crt','lbbb','vt','wpw'].includes(currentMode) ? '>120' : '90';
  const pq = ['avblock'].includes(currentMode) ? '-' : ['wpw'].includes(currentMode) ? '<120' : '160';
  const hrLabel = currentLang==='ua' ? 'ЧСС' : 'HR';
  const msLabel = currentLang==='ua' ? 'уд/хв' : 'bpm';

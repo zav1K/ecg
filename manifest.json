@@ -4,7 +4,7 @@
   "description": "Інтерактивний симулятор електрокардіограми для студентів медичних університетів",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0d1117",
+  "background_color": "#2b3035",
   "theme_color": "#0d6efd",
   "orientation": "any",
   "lang": "uk",
