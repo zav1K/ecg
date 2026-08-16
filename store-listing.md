@@ -72,6 +72,7 @@ EN: ecg, ekg, cardiology, arrhythmia, simulator, ecg training, medical student, 
 
 ## Посилання, які знадобляться в Play Console
 
-- Privacy Policy URL: `privacy-policy.html` з цього репозиторію (захостити на GitHub Pages або власному домені)
+- Privacy Policy URL: `privacy-policy.html` з цього репозиторію (уже хоститься на `https://ecg.free.nf/privacy-policy.html`)
+- Feature Graphic (1024×500, обов'язковий): `feature-graphic.png` у корені репозиторію
 - Категорія: Медицина (Medical) або Освіта (Education)
 - Контактний email: zavikhorror@gmail.com
