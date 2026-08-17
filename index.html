@@ -582,14 +582,18 @@
  <details class="control-group" open>
  <summary class="control-group-title">Аритмії</summary>
  <button class="rhythm-btn" id="btn-afib" onclick="setMode('afib',this)">Фібриляція передсердь</button>
+ <button class="rhythm-btn" id="btn-aflutter" onclick="setMode('aflutter',this)">Тріпотіння передсердь</button>
  <button class="rhythm-btn" id="btn-pvc" onclick="setMode('pvc',this)">Екстрасистола (ШЕ)</button>
  <button class="rhythm-btn" id="btn-vt" onclick="setMode('vt',this)">Шлуночкова тахікардія</button>
  </details>
  <details class="control-group" open>
  <summary class="control-group-title">Блокади / Метаболізм</summary>
+ <button class="rhythm-btn" id="btn-avblock1" onclick="setMode('avblock1',this)">АВ-блокада I ст.</button>
  <button class="rhythm-btn" id="btn-avblock" onclick="setMode('avblock',this)">Повна АВ-блокада</button>
  <button class="rhythm-btn" id="btn-lbbb" onclick="setMode('lbbb',this)">Блокада ЛНПГ</button>
+ <button class="rhythm-btn" id="btn-rbbb" onclick="setMode('rbbb',this)">Блокада ПНПГ</button>
  <button class="rhythm-btn" id="btn-hyperk" onclick="setMode('hyperk',this)">Гіперкаліємія</button>
+ <button class="rhythm-btn" id="btn-hypok" onclick="setMode('hypok',this)">Гіпокаліємія</button>
  </details>
  <details class="control-group" open>
  <summary class="control-group-title">Провідність / Інше</summary>
@@ -730,11 +734,15 @@ const i18n = {
   btnStemiPost: 'STEMI - Задній ',
   btnStemiRv:  'STEMI - Правий шлуночок ',
   btnAfib: 'Фібриляція передсердь',
+  btnAflutter: 'Тріпотіння передсердь',
   btnPvc: 'Екстрасистола (ШЕ)',
   btnVt: 'Шлуночкова тахікардія',
+  btnAvblock1: 'АВ-блокада I ст.',
   btnAvblock: 'Повна АВ-блокада',
   btnLbbb: 'Блокада ЛНПГ',
+  btnRbbb: 'Блокада ПНПГ',
   btnHyperk: 'Гіперкаліємія',
+  btnHypok: 'Гіпокаліємія',
   btnMobitz1: 'АВ-блокада II ст. Мобітц I',
   btnMobitz2: 'АВ-блокада II ст. Мобітц II',
   btnWpw: 'WPW-синдром',
@@ -816,11 +824,15 @@ const i18n = {
   btnStemiPost: 'STEMI - Posterior ',
   btnStemiRv:  'STEMI - Right Ventricle ',
   btnAfib: 'Atrial Fibrillation',
+  btnAflutter: 'Atrial Flutter',
   btnPvc: 'PVC / Bigeminy',
   btnVt: 'Ventricular Tachycardia',
+  btnAvblock1: '1st Degree AV Block',
   btnAvblock: 'Complete AV Block',
   btnLbbb: 'LBBB',
+  btnRbbb: 'RBBB',
   btnHyperk: 'Hyperkalemia',
+  btnHypok: 'Hypokalemia',
   btnMobitz1: '2nd Degree AV Block - Mobitz I',
   btnMobitz2: '2nd Degree AV Block - Mobitz II',
   btnWpw: 'WPW Syndrome',
@@ -892,8 +904,9 @@ function applyLang() {
  'btn-infarct_ant':L.btnInfarctAnt,'btn-infarct_lat':L.btnInfarctLat,'btn-infarct_post':L.btnInfarctPost,
   'btn-stemi_inf':L.btnStemiInf,'btn-stemi_ant':L.btnStemiAnt,
   'btn-stemi_lat':L.btnStemiLat,'btn-stemi_post':L.btnStemiPost,'btn-stemi_rv':L.btnStemiRv,
-  'btn-afib':L.btnAfib,'btn-pvc':L.btnPvc,'btn-vt':L.btnVt,
-  'btn-avblock':L.btnAvblock,'btn-lbbb':L.btnLbbb,'btn-hyperk':L.btnHyperk,
+  'btn-afib':L.btnAfib,'btn-aflutter':L.btnAflutter,'btn-pvc':L.btnPvc,'btn-vt':L.btnVt,
+  'btn-avblock1':L.btnAvblock1,'btn-avblock':L.btnAvblock,'btn-lbbb':L.btnLbbb,'btn-rbbb':L.btnRbbb,
+  'btn-hyperk':L.btnHyperk,'btn-hypok':L.btnHypok,
   'btn-mobitz1':L.btnMobitz1,'btn-mobitz2':L.btnMobitz2,'btn-wpw':L.btnWpw,
   'btn-sinusarr':L.btnSinusArr,'btn-pericarditis':L.btnPericarditis,
   'btn-vvi':L.btnVvi,'btn-aai':L.btnAai,'btn-ddd':L.btnDdd,'btn-crt':L.btnCrt,
@@ -975,11 +988,15 @@ const ecgData = {
   infarct_lat: { hr:70, badge:'Рубцеві зміни · Бічний', badgeClass:'warning', title:'Постінфарктний кардіосклероз - Бічний', text:'Патологічний Q у I, aVL, V5-V6. Ознака перенесеного бічного ІМ, часто поєднується з переднім. Морфологія стабільна, без динаміки ST.' },
   infarct_post: { hr:70, badge:'Рубцеві зміни · Задній', badgeClass:'warning', title:'Постінфарктний кардіосклероз - Задній', text:'Дзеркальна картина у V1-V3: домінантний R (>S) та високий позитивний T замість патологічного Q - задню стінку не видно напряму в 12 стандартних відведеннях. Без депресії ST, на відміну від гострого заднього STEMI.' },
   afib : { hr:110, badge:'Порушення ритму', badgeClass:'warning', title:'Фібриляція передсердь', text:'Відсутність зубців P, хвилі фібриляції (f), абсолютно неправильний ритм шлуночків. Повзунком можна змінювати середню частоту відповіді шлуночків.' },
+  aflutter : { hr:150, badge:'Порушення ритму', badgeClass:'warning', title:'Тріпотіння передсердь', text:'Неперервні пилкоподібні F-хвилі (~300/хв), найкраще видно у II, III, aVF. Класичне АВ-проведення 2:1 дає правильний ритм шлуночків ~150/хв. QRS зазвичай вузький.' },
   pvc : { hr:75, badge:'Порушення ритму', badgeClass:'warning', title:'Шлуночкова екстрасистолія', text:'Передчасний широкий деформований QRS з повною компенсаторною паузою. Морфологія екстрасистоли змінюється залежно від відведення.' },
   vt : { hr:155, badge:'Невідкладний стан', badgeClass:'danger', title:'Шлуночкова тахікардія (VT)', text:'Послідовність широких деформованих шлуночкових комплексів. P не диференціюються. Напрямок комплексів протилежний у грудних і кінцівкових відведеннях.' },
+  avblock1: { hr:75, badge:'АВ-блокада I', badgeClass:'purple', title:'АВ-блокада I ступеня', text:'Подовжений інтервал PQ (>0.20 с), постійний від циклу до циклу. Кожен P проводиться на шлуночки - випадання QRS немає. Морфологія QRS-T нормальна. Зазвичай доброякісна, рівень блоку - АВ-вузол.' },
   avblock: { hr:80, badge:'Блокада', badgeClass:'purple', title:'АВ-блокада III ступеня', text:'Повна АВ-дисоціація: P слухаються повзунка ЧСС, QRS б\'ються у фіксовано повільному ідіовентрикулярному ритмі (~35 уд/хв).' },
   lbbb : { hr:70, badge:'Блокада', badgeClass:'purple', title:'Повна блокада лівої ніжки пучка Гіса', text:'QRS >0.12 с, широкий розщеплений R типу "М" у I, aVL, V5–V6. QS або rS у V1–V3. Дискордантні ST та T.' },
+  rbbb : { hr:70, badge:'Блокада', badgeClass:'purple', title:'Повна блокада правої ніжки пучка Гіса', text:'QRS >0.12 с, rsR\' ("вушка кролика") у V1–V2. Широкий сповільнений термінальний S у I, aVL, V5–V6. Інверсія T у V1–V2 - вторинна, дискордантна зміна.' },
   hyperk : { hr:75, badge:'Метаболізм', badgeClass:'purple', title:'Гіперкаліємія', text:'Вузькі симетрично загострені "наметоподібні" T - найбільш характерні у V2–V5. Малий або відсутній P. При тяжкій - розширення QRS.' },
+  hypok : { hr:75, badge:'Метаболізм', badgeClass:'purple', title:'Гіпокаліємія', text:'Сплощений T та виражена U-хвиля (найкраще видно у II, V2–V5) - разом можуть імітувати подовжений QT. Легка депресія ST. У тяжких випадках - ризик аритмій.' },
   mobitz1: { hr:75, badge:'АВ-блокада II', badgeClass:'purple', title:'АВ-блокада II ступеня, тип Мобітц I (Венкебах)', text:'Прогресивне подовження інтервалу PQ від комплексу до комплексу, аж поки один зубець P не проведеться на шлуночки (випадання QRS). Після паузи цикл повторюється з найкоротшого PQ. Зазвичай доброякісний перебіг, рівень блоку - АВ-вузол.' },
   mobitz2: { hr:70, badge:'АВ-блокада II', badgeClass:'danger', title:'АВ-блокада II ступеня, тип Мобітц II', text:'Раптове випадання QRS без попереднього подовження PQ - інтервал PQ постійний (нормальний або дещо збільшений). Часто QRS розширений (блок нижче АВ-вузла, у системі Гіса-Пуркіньє). Небезпечний - високий ризик прогресії у повну АВ-блокаду, показання до кардіостимулятора.' },
   wpw : { hr:80, badge:'Передзбудження', badgeClass:'warning', title:'Синдром WPW (Вольфа-Паркінсона-Уайта)', text:'Вкорочений інтервал PQ (<0.12 с) та дельта-хвиля - сповільнений, похилий початок QRS через проведення імпульсу додатковим (аномальним) шляхом (пучок Кента) в обхід АВ-вузла. QRS розширений. Може імітувати блокаду ніжки пучка Гіса або навіть інфаркт міокарда. Ризик - пароксизмальна тахікардія, при ФП - загроза фібриляції шлуночків.' },
@@ -1005,11 +1022,15 @@ const ecgData = {
   infarct_lat: { hr:70, badge:'Scar · Lateral', badgeClass:'warning', title:'Post-Infarction Cardiosclerosis - Lateral', text:'Pathological Q in I, aVL, V5-V6. Marker of a prior lateral MI, often combined with anterior. Morphology is stable, no ST dynamics.' },
   infarct_post: { hr:70, badge:'Scar · Posterior', badgeClass:'warning', title:'Post-Infarction Cardiosclerosis - Posterior', text:'Mirror pattern in V1-V3: dominant R (>S) and a tall upright T instead of a pathological Q - the posterior wall is never seen directly on the standard 12 leads. No ST depression, unlike acute posterior STEMI.' },
   afib : { hr:110, badge:'Arrhythmia', badgeClass:'warning', title:'Atrial Fibrillation', text:'Absent P waves, fibrillation (f) waves, irregularly irregular ventricular response. Use the HR slider to adjust mean ventricular rate.' },
+  aflutter : { hr:150, badge:'Arrhythmia', badgeClass:'warning', title:'Atrial Flutter', text:'Continuous sawtooth F waves (~300/min), best seen in II, III, aVF. Classic 2:1 AV conduction gives a regular ventricular rate of ~150/min. QRS is usually narrow.' },
   pvc : { hr:75, badge:'Arrhythmia', badgeClass:'warning', title:'Premature Ventricular Contractions', text:'Premature, wide, bizarre QRS with a full compensatory pause. Morphology changes by lead.' },
   vt : { hr:155, badge:'Emergency', badgeClass:'danger', title:'Ventricular Tachycardia (VT)', text:'A run of wide, deformed ventricular complexes. P waves are not discernible. QRS axis is discordant in precordial vs limb leads.' },
+  avblock1: { hr:75, badge:'AV Block I', badgeClass:'purple', title:'1st Degree AV Block', text:'Prolonged PR interval (>0.20 s), constant beat-to-beat. Every P conducts to the ventricles - no dropped QRS. QRS-T morphology is normal. Usually benign, block level is at the AV node.' },
   avblock: { hr:80, badge:'Block', badgeClass:'purple', title:'Complete (3rd Degree) AV Block', text:'Complete AV dissociation: atrial rate follows the HR slider; ventricles beat at a fixed slow idioventricular rate (~35 bpm).' },
   lbbb : { hr:70, badge:'Block', badgeClass:'purple', title:'Left Bundle Branch Block (LBBB)', text:'QRS >0.12 s, broad notched "M-shaped" R in I, aVL, V5–V6. QS or rS in V1–V3. Discordant ST and T.' },
+  rbbb : { hr:70, badge:'Block', badgeClass:'purple', title:'Right Bundle Branch Block (RBBB)', text:'QRS >0.12 s, rsR\' ("rabbit ears") in V1–V2. Wide, slurred terminal S in I, aVL, V5–V6. T-wave inversion in V1–V2 is a secondary, discordant change.' },
   hyperk : { hr:75, badge:'Metabolic', badgeClass:'purple', title:'Hyperkalemia', text:'Narrow, symmetric, peaked "tent-like" T waves - most prominent in V2–V5. Small or absent P. In severe cases - QRS widening.' },
+  hypok : { hr:75, badge:'Metabolic', badgeClass:'purple', title:'Hypokalemia', text:'Flattened T wave and a prominent U wave (best seen in II, V2–V5) - together they can mimic a prolonged QT. Mild ST depression. Arrhythmia risk in severe cases.' },
   mobitz1: { hr:75, badge:'AV Block II', badgeClass:'purple', title:'2nd Degree AV Block, Mobitz Type I (Wenckebach)', text:'Progressive PR interval lengthening beat-to-beat until one P wave fails to conduct (dropped QRS). The cycle then resets with the shortest PR. Usually benign, block level is at the AV node.' },
   mobitz2: { hr:70, badge:'AV Block II', badgeClass:'danger', title:'2nd Degree AV Block, Mobitz Type II', text:'Sudden dropped QRS with no preceding PR prolongation - the PR interval stays constant (normal or slightly prolonged). QRS is often wide (block below the AV node, in the His-Purkinje system). Dangerous - high risk of progression to complete heart block; pacemaker indication.' },
   wpw : { hr:80, badge:'Pre-excitation', badgeClass:'warning', title:'WPW Syndrome (Wolff-Parkinson-White)', text:'Short PR interval (<0.12 s) and a delta wave - a slurred, slow initial QRS upstroke caused by an accessory pathway (bundle of Kent) bypassing the AV node. QRS is widened. Can mimic bundle branch block or even myocardial infarction. Risk of paroxysmal tachycardia; if AF occurs, risk of ventricular fibrillation.' },
@@ -1212,7 +1233,14 @@ const LC = {
  vt: [{p:0.0,qrs:0.8, t:0.7, st:0 },{p:0.0, qrs:1.0, t:1.0, st:0 },{p:0.0,qrs:0.6, t:0.6, st:0 },{p:0.0, qrs:-0.9, t:-0.8,st:0 },{p:0.0, qrs:0.4, t:0.4, st:0 },{p:0.0, qrs:0.8, t:0.7, st:0 },{p:0.0, qrs:-1.1, t:-0.8,st:0 },{p:0.0, qrs:-0.9, t:-0.7,st:0 },{p:0.0,qrs:-0.5, t:-0.4,st:0 },{p:0.0,qrs:0.5, t:0.5, st:0 },{p:0.0,qrs:0.9, t:0.8, st:0 },{p:0.0,qrs:1.0, t:0.9, st:0 }],
  avblock: [{p:0.7,qrs:0.6, t:0.6, st:0 },{p:1.0, qrs:1.0, t:1.0, st:0 },{p:0.5,qrs:0.5, t:0.5, st:0 },{p:-0.8,qrs:-0.8, t:-0.8,st:0 },{p:0.3, qrs:0.3, t:0.3, st:0 },{p:0.9, qrs:0.9, t:0.9, st:0 },{p:-0.2,qrs:-0.9, t:-0.4,st:0 },{p:0.2, qrs:-0.5, t:0.3, st:0 },{p:0.4,qrs:0.4, t:0.5, st:0 },{p:0.5,qrs:0.9, t:0.8, st:0 },{p:0.5,qrs:1.0, t:0.9, st:0 },{p:0.5,qrs:0.9, t:0.8, st:0 }],
  lbbb: [{p:0.7,qrs:0.9, t:-0.9,st:14},{p:1.0, qrs:1.0, t:1.0, st:0 },{p:0.4,qrs:-0.5, t:0.5, st:-8},{p:-0.8,qrs:-0.7, t:-0.7,st:0 },{p:0.5, qrs:0.8, t:-0.8,st:12},{p:0.8, qrs:-0.4, t:0.5, st:-6},{p:-0.1,qrs:-1.2, t:0.7, st:-10},{p:0.1,qrs:-1.1, t:0.6, st:-8},{p:0.3,qrs:-0.5, t:0.4, st:-5},{p:0.5,qrs:0.6, t:-0.5,st:8 },{p:0.5,qrs:1.1, t:-0.9,st:14},{p:0.5,qrs:1.0, t:-0.8,st:12}],
+ // БПНПГ: дзеркало БЛНПГ - той самий рендер (два "горби" в одному напрямку -
+ // широкий розщеплений комплекс), але афектовані відведення поміняні місцями:
+ // rsR' (подвійний позитивний горб) у V1-V2, широкий сповільнений S у I/aVL/V5-V6
+ rbbb: [{p:0.7,qrs:-0.8, t:0.4, st:0 },{p:1.0, qrs:1.0, t:0.8, st:0 },{p:0.5,qrs:0.5, t:0.4, st:0 },{p:-0.8,qrs:-0.6, t:-0.5,st:0 },{p:0.3, qrs:-0.6, t:0.3, st:0 },{p:0.8, qrs:0.5, t:0.5, st:0 },{p:-0.2,qrs:1.3, t:-0.6,st:0 },{p:0.2, qrs:1.2, t:-0.5,st:0 },{p:0.4,qrs:0.6, t:0.3, st:0 },{p:0.5,qrs:0.5, t:0.5, st:0 },{p:0.5,qrs:-0.9, t:0.6, st:0 },{p:0.5,qrs:-0.8, t:0.6, st:0 }],
  hyperk: [{p:0.4,qrs:0.7, t:0.7, st:0 },{p:0.5, qrs:1.0, t:1.0, st:0 },{p:0.3,qrs:0.5, t:0.6, st:0 },{p:-0.4,qrs:-0.8, t:-0.8,st:0 },{p:0.2, qrs:0.3, t:0.4, st:0 },{p:0.4, qrs:0.7, t:0.8, st:0 },{p:-0.1,qrs:-0.6, t:0.7, st:0 },{p:0.1, qrs:-0.4, t:1.3, st:0 },{p:0.3,qrs:0.4, t:1.5, st:0 },{p:0.4,qrs:0.8, t:1.4, st:0 },{p:0.4,qrs:0.9, t:1.1, st:0 },{p:0.4,qrs:0.8, t:0.9, st:0 }],
+ // Гіпокаліємія: сплощений T (амплітуда занижена прямо у формулі рендеру) +
+ // виражена U-хвиля після T, легка депресія ST - найкраще видно у II, V2-V5
+ hypok: [{p:0.7,qrs:0.7, t:0.4, st:4 },{p:1.0, qrs:1.0, t:0.5, st:5 },{p:0.4,qrs:0.4, t:0.3, st:3 },{p:-0.7,qrs:-0.7, t:-0.3,st:0 },{p:0.3, qrs:0.3, t:0.2, st:3 },{p:0.8, qrs:0.8, t:0.4, st:4 },{p:-0.2,qrs:-0.5, t:0.3, st:0 },{p:0.2, qrs:-0.3, t:0.4, st:6 },{p:0.4,qrs:0.4, t:0.4, st:6 },{p:0.5,qrs:0.8, t:0.4, st:6 },{p:0.5,qrs:0.9, t:0.4, st:5 },{p:0.5,qrs:0.8, t:0.4, st:4 }],
  // WPW: скорочений PQ + дельта-хвиля. Тип А (додатковий шлях лівосторонній) - домінантний R
  // у V1 (може імітувати БПНПГ або задній ІМ - навмисно закладено як діагностична пастка)
  // Порядок: I II III aVR aVL aVF V1 V2 V3 V4 V5 V6
@@ -1234,7 +1262,7 @@ const LEAD_IDX = Object.fromEntries(LEAD_NAMES.map((n,i)=>[n,i]));
 // PREMIUM (freemium: більшість станів безкоштовно; преміум - спеціалізований пак
 // (5 рідкісних локалізацій STEMI/старого ІМ, Мобітц II, усі 4 кардіостимулятори) +
 // повний банк питань іспиту (безкоштовно - тільки по безкоштовних станах) + стрічка)
-const FREE_MODES = new Set(['normal','lvh','pe','nstemi','infarct','infarct_ant','stemi_inf','stemi_ant','afib','pvc','vt','avblock','lbbb','hyperk','mobitz1','wpw','sinusarr','pericarditis']);
+const FREE_MODES = new Set(['normal','lvh','pe','nstemi','infarct','infarct_ant','stemi_inf','stemi_ant','afib','aflutter','pvc','vt','avblock1','avblock','lbbb','rbbb','hyperk','hypok','mobitz1','wpw','sinusarr','pericarditis']);
 
 // ЧАСОВО: весь веб-сайт безкоштовний до запуску покупок у Google Play (див. патч-ноути) -
 // вся інфраструктура paywall нижче лишається робочою, просто обходиться цим прапорцем
@@ -1384,12 +1412,32 @@ function getBaseComplex(mode, cx, lc) {
  dy += sharp(cx,45,16,45*q);
  dy -= sharp(cx,61,8,25*q);
  dy -= bump(cx,95,40,15*t,0.8);
- } else if (mode==='lbbb') {
+ } else if (mode==='lbbb' || mode==='rbbb') {
+ // Той самий формат "два горби в один бік" - у БЛНПГ горби додатні в лівих
+ // відведеннях (за рахунок qrs>0 у LC), у БПНПГ - додатні у V1-V2 (qrs>0 там),
+ // а зліва (I/aVL/V5-V6) qrs<0 у LC.rbbb, тому ті самі горби йдуть у інший бік
  dy -= bump(cx,10,25,10*p);
  dy -= sharp(cx,45,15,60*q);
  dy -= sharp(cx,58,15,70*q);
  if (st && cx>63 && cx<155) dy += st*bump(cx,63,92,1,0.5);
  dy += bump(cx,110,50,25*t,1.2);
+ } else if (mode==='avblock1') {
+ // АВ-блокада I ст.: морфологія QRS-T нормальна, лише подовжений PQ -
+ // P зсунуто раніше відносно QRS (не власна LC, використовує LC.normal)
+ dy -= bump(cx,0,20,10*p);
+ dy += sharp(cx,48,4,4*Math.abs(q));
+ dy -= sharp(cx,52,8,80*q);
+ dy += sharp(cx,60,6,12*Math.abs(q));
+ if (st && cx>66 && cx<100) dy += st*bump(cx,66,34,1,0.5);
+ dy -= bump(cx,90,45,20*t,0.8);
+ } else if (mode==='hypok') {
+ dy -= bump(cx,10,25,10*p);
+ dy += sharp(cx,48,4,4*Math.abs(q));
+ dy -= sharp(cx,52,8,80*q);
+ dy += sharp(cx,60,6,12*Math.abs(q));
+ if (st && cx>66 && cx<95) dy += st*bump(cx,66,29,1,0.5);
+ dy -= bump(cx,88,24,13*t,0.9); // сплощений T - помітно менша амплітуда, ніж зазвичай (normal: 20*t)
+ dy -= bump(cx,122,16,5*Math.sign(t||1),0.9); // окрема, менша U-хвиля - чіткий проміжок від T
  } else if (mode==='hyperk') {
  dy -= bump(cx,10,25,3*p);
  dy += sharp(cx,48,4,4*Math.abs(q));
@@ -1473,7 +1521,7 @@ function drawMonitorFrame() {
  let y=baselineY, label='TP';
  const cycle=15000/currentHR, cx=globalTime%cycle, lc=getLc();
 
- if (['normal','lvh','pe','stemi_inf','stemi_ant','stemi_lat','stemi_post','stemi_rv','nstemi','infarct','infarct_ant','infarct_lat','infarct_post','lbbb','hyperk','wpw','pericarditis'].includes(currentMode)) {
+ if (['normal','lvh','pe','stemi_inf','stemi_ant','stemi_lat','stemi_post','stemi_rv','nstemi','infarct','infarct_ant','infarct_lat','infarct_post','lbbb','rbbb','avblock1','hypok','hyperk','wpw','pericarditis'].includes(currentMode)) {
  const lx = cycle<140 ? cx*(140/cycle) : cx;
  y += getBaseComplex(currentMode, lx, lc);
  label = getStdLabel(lx);
@@ -1508,6 +1556,23 @@ function drawMonitorFrame() {
  y += bump(vtCx - T_OFF, 0, T_W, 22 * lc.qrs, 0.9);
  }
  label='VT';
+ } else if (currentMode==='aflutter') {
+ // Тріпотіння передсердь: неперервні пилкоподібні F-хвилі (~300/хв),
+ // АВ-проведення 2:1 - flutterCycle = cycle/2, тому повзунок ЧСС керує саме
+ // шлуночковою частотою (як і має бути клінічно)
+ const flutterCycle = cycle / 2;
+ const fp = (globalTime % flutterCycle) / flutterCycle;
+ const saw = fp < 0.4 ? fp/0.4 : -(1-(fp-0.4)/0.6)*0.5;
+ y -= saw * 14 * Math.abs(lc.qrs || 0.6);
+ const qPos = flutterCycle + flutterCycle*0.25;
+ if (cx > qPos-4 && cx < qPos+55) {
+ const qx = cx - qPos;
+ y += sharp(qx,0,4,4*Math.abs(lc.qrs));
+ y -= sharp(qx,4,8,75*lc.qrs);
+ y += sharp(qx,12,6,10*Math.abs(lc.qrs));
+ y -= bump(qx,26,32,16*lc.t,0.85);
+ label = qx<12 ? 'R' : qx<18 ? 'S' : 'T';
+ } else { label = 'f'; }
  } else if (currentMode==='afib') {
  const fRate = 4.5;
  y+=(3*Math.sin(globalTime/fRate)+1.5*Math.sin(globalTime/fRate*1.7+0.8)+0.8*Math.sin(globalTime/fRate*2.3+1.4))*Math.abs(lc.qrs)*0.6;
@@ -2018,7 +2083,7 @@ const STRIP_LEADS = ['I','II','III','aVR','aVL','aVF','V1','V2','V3','V4','V5','
 // Генерує Y-зміщення для стрічки через getBaseComplex (ідентична морфологія з монітором)
 function stripGetDY(mode, cx, lc, cycleLen) {
  const lx = cycleLen < 140 ? cx * (140 / cycleLen) : cx;
- if (['normal','lvh','pe','stemi_inf','stemi_ant','stemi_lat','stemi_post','stemi_rv','nstemi','infarct','infarct_ant','infarct_lat','infarct_post','lbbb','hyperk','wpw','pericarditis'].includes(mode)) {
+ if (['normal','lvh','pe','stemi_inf','stemi_ant','stemi_lat','stemi_post','stemi_rv','nstemi','infarct','infarct_ant','infarct_lat','infarct_post','lbbb','rbbb','avblock1','hypok','hyperk','wpw','pericarditis'].includes(mode)) {
  return getBaseComplex(mode, lx, lc);
  }
  if (mode === 'pvc') {
@@ -2033,6 +2098,21 @@ function stripGetDY(mode, cx, lc, cycleLen) {
  const half=cycleLen/2, sg=Math.sign(lc.qrs||1); let dy=0;
  if (cx<half){dy+=40*sg;dy-=(0.5-0.5*Math.cos((cx/half)*Math.PI))*100*lc.qrs;}
  else{dy-=60*sg;dy+=(0.5-0.5*Math.cos(((cx-half)/half)*Math.PI))*100*lc.qrs;}
+ return dy;
+ }
+ if (mode === 'aflutter') {
+ const flutterCycle = cycleLen / 2;
+ const fp = (cx % flutterCycle) / flutterCycle;
+ const saw = fp < 0.4 ? fp/0.4 : -(1-(fp-0.4)/0.6)*0.5;
+ let dy = -saw * 14 * Math.abs(lc.qrs || 0.6);
+ const qPos = flutterCycle + flutterCycle*0.25;
+ if (cx > qPos-4 && cx < qPos+55) {
+ const qx = cx - qPos;
+ dy += sharp(qx,0,4,4*Math.abs(lc.qrs));
+ dy -= sharp(qx,4,8,75*lc.qrs);
+ dy += sharp(qx,12,6,10*Math.abs(lc.qrs));
+ dy -= bump(qx,26,32,16*lc.t,0.85);
+ }
  return dy;
  }
  if (mode === 'afib') {
@@ -2211,8 +2291,8 @@ function updateStripMeta() {
  const d = ecgData[currentLang][currentMode];
  const L = t();
  const hr = parseInt(document.getElementById('hrDisplay').textContent) || d.hr;
- const qrs = ['vvi','ddd','crt','lbbb','vt','wpw'].includes(currentMode) ? '>120' : '90';
- const pq = ['avblock'].includes(currentMode) ? '-' : ['wpw'].includes(currentMode) ? '<120' : '160';
+ const qrs = ['vvi','ddd','crt','lbbb','rbbb','vt','wpw'].includes(currentMode) ? '>120' : '90';
+ const pq = ['avblock'].includes(currentMode) ? '-' : ['wpw'].includes(currentMode) ? '<120' : ['avblock1'].includes(currentMode) ? '>220' : '160';
  const hrLabel = currentLang==='ua' ? 'ЧСС' : 'HR';
  const msLabel = currentLang==='ua' ? 'уд/хв' : 'bpm';
  const msUnit  = currentLang==='ua' ? 'мс' : 'ms';
