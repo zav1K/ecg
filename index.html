@@ -10,7 +10,7 @@
  <meta name="apple-mobile-web-app-title" content="ЕКГ">
  <link rel="manifest" href="/manifest.json">
  <link rel="apple-touch-icon" href="/icon-192.png">
- <title>ЕКГ-симулятор 0.9.1</title>
+ <title>ЕКГ-симулятор 0.9.2</title>
  <style>
  :root {
  --bg-color: #2b3035;
@@ -432,14 +432,15 @@
 
 <div id="patchNotesModal" class="modal-overlay">
     <div class="modal-content">
-        <div class="modal-header">Оновлення 0.9.1</div>
+        <div class="modal-header">Оновлення 0.9.2</div>
         <div class="modal-body">
-            <p>Що нового у версії 0.9.1:</p>
+            <p>Що нового у версії 0.9.2:</p>
             <ul>
-                <li><b>Мобільна верстка:</b> монітор ЕКГ, ЧСС і опис стану тепер одразу під шапкою - більше не треба гортати повз усі кнопки, щоб побачити ритм.</li>
-                <li><b>Вибір стану - акордеон:</b> групи кнопок згортаються/розгортаються тапом; на телефоні за замовчуванням розгорнута лише перша група.</li>
-                <li><b>Виправлено баг верстки:</b> групи кнопок помилково ховались і на комп'ютері теж - тепер за замовчуванням усі відкриті на десктопі, згортаються лише на вузьких екранах.</li>
-                <li><b>Помітніші заголовки груп:</b> тепер це виразна плашка зі стрілкою, а не дрібний сірий текст.</li>
+                <li><b>Нові стани:</b> БПНПГ, АВ-блокада I ступеня, тріпотіння передсердь, гіпокаліємія - тепер 28 станів.</li>
+                <li><b>Виправлено:</b> після того як стрічка ЕКГ на моніторі "прокручувалась по колу", підказки під час паузи зникали для вже намальованої частини - клікабельна тепер уся стрічка.</li>
+                <li><b>Виправлено:</b> текст у футері стрічки 12 відведень міг накладатися на назву стану при довгих діагнозах.</li>
+                <li><b>Виправлено:</b> на великому розмірі шрифту кнопка закриття вікна оновлень була недоступна - вікно тепер прокручується.</li>
+                <li><b>Нова іконка застосунку</b> - у фірмових синіх тонах.</li>
             </ul>
             <button class="modal-close-btn" onclick="closeModal()">Зрозуміло, почати роботу</button>
         </div>
@@ -489,13 +490,13 @@
  </div>
  <div class="strip-footer-bar">
  <span id="stripFooterLeft">ЕКГ-симулятор</span>
- <span>Версія 0.9.1 · 2026</span>
+ <span>Версія 0.9.2 · 2026</span>
  </div>
  </div>
 </div>
 
 <div class="container">
- <h1>ЕКГ-симулятор 0.9.1</h1>
+ <h1>ЕКГ-симулятор 0.9.2</h1>
 
  <div class="header-panel">
  <div class="subtitle" id="leadSubtitle">Відведення II | 25 мм/с · 10 мм/мВ</div>
@@ -619,7 +620,7 @@
  </div>
 
  <div class="department-footer">
- <span id="footerVersion">Версія 0.9.1 · 2026</span><br>
+ <span id="footerVersion">Версія 0.9.2 · 2026</span><br>
  <span id="disclaimerText" style="opacity:0.75;">Навчальний інструмент. Не призначений для клінічної діагностики чи прийняття медичних рішень.</span>
  </div>
 </div>
@@ -635,7 +636,7 @@ const uiCtx = uiCanvas.getContext('2d');
 const container = document.getElementById('canvasContainer');
 const transitionOverlay = document.getElementById('transitionOverlay');
 
-const APP_VERSION = '0.9.1';
+const APP_VERSION = '0.9.2';
 function closeModal() {
  document.getElementById('patchNotesModal').classList.add('hidden');
  try { localStorage.setItem('ecgSimSeenVersion', APP_VERSION); } catch(e) {}
@@ -700,7 +701,7 @@ let currentLang = 'ua';
 
 const i18n = {
  ua: {
-  appTitle: 'ЕКГ-симулятор 0.9.1',
+  appTitle: 'ЕКГ-симулятор 0.9.2',
   langBtn: 'EN',
   examBtn: 'Режим іспиту',
   stripBtn: 'Стрічка 12 відв.',
@@ -766,20 +767,21 @@ const i18n = {
   stripClose: 'Закрити',
   stripRhythm: 'II - ритмова смуга',
   stripFooter: 'ЕКГ-симулятор',
-  patchTitle: 'Оновлення 0.9.1',
-  patchNew: 'Що нового у версії 0.9.1:',
+  patchTitle: 'Оновлення 0.9.2',
+  patchNew: 'Що нового у версії 0.9.2:',
   patchItems: [
-   '<b>Нові стани:</b> постінфарктні Q-хвильові зміни за трьома новими локалізаціями - передньою, бічною, задньою.',
-   '<b>Тимчасово все безкоштовно:</b> поки в застосунку не запущені покупки, усі стани, режим іспиту й стрічка 12 відведень доступні без обмежень. Найближчим часом частина контенту (рідкісні локалізації, кардіостимулятори, повний банк питань іспиту, стрічка) стане платною - одноразова покупка, без підписки.',
-   '<b>Виправлено:</b> підказки на моніторі під час Мобітц I/II, стрибок кривої ШЕ при високому ЧСС, збій підказок після ресайзу на паузі.',
-   '<b>Додано дисклеймер:</b> застосунок - навчальний інструмент, не для клінічної діагностики.',
+   '<b>Нові стани:</b> БПНПГ, АВ-блокада I ступеня, тріпотіння передсердь, гіпокаліємія - тепер 28 станів.',
+   '<b>Виправлено:</b> після того як стрічка ЕКГ на моніторі "прокручувалась по колу", підказки під час паузи зникали для вже намальованої частини - клікабельна тепер уся стрічка.',
+   '<b>Виправлено:</b> текст у футері стрічки 12 відведень міг накладатися на назву стану при довгих діагнозах.',
+   '<b>Виправлено:</b> на великому розмірі шрифту кнопка закриття вікна оновлень була недоступна - вікно тепер прокручується.',
+   '<b>Нова іконка застосунку</b> - у фірмових синіх тонах.',
   ],
   patchClose: 'Зрозуміло, почати роботу',
   caliperMs: (ms,comment) => `↔ ${ms} мс${comment}`,
   caliperMv: mv => `↕ Ампл: ${mv} мВ`,
   caliperNorm: ' норма', caliperBorder: ' межа', caliperProlonged: ' подовж.',
   instruction: '<b>Підказка:</b> Під час паузи клікніть на будь-який елемент ЕКГ для анатомічної довідки.',
-  footerVersion: 'Версія 0.9.1 · 2026',
+  footerVersion: 'Версія 0.9.2 · 2026',
   disclaimer: 'Навчальний інструмент. Не призначений для клінічної діагностики чи прийняття медичних рішень.',
   premiumTitle: 'Повний доступ',
   premiumIntro: 'Цей стан і ще кілька функцій входять до спеціалізованого преміум-паку.',
@@ -790,7 +792,7 @@ const i18n = {
   premiumWebNotice: 'Покупка доступна в мобільному застосунку в Google Play. Веб-версія поки лише для перегляду.',
  },
  en: {
-  appTitle: 'ECG Simulator 0.9.1',
+  appTitle: 'ECG Simulator 0.9.2',
   langBtn: 'UA',
   examBtn: 'Exam Mode',
   stripBtn: '12-Lead Strip',
@@ -856,20 +858,21 @@ const i18n = {
   stripClose: 'Close',
   stripRhythm: 'II - rhythm strip',
   stripFooter: 'ECG Simulator',
-  patchTitle: 'Update 0.9.1',
-  patchNew: "What's new in 0.9.1:",
+  patchTitle: 'Update 0.9.2',
+  patchNew: "What's new in 0.9.2:",
   patchItems: [
-   '<b>New states:</b> post-infarction Q-wave changes for three new locations - anterior, lateral, and posterior.',
-   '<b>Everything is temporarily free:</b> until in-app purchases go live, every state, exam mode, and the 12-lead strip are fully unlocked. Soon a part of the content (rare locations, pacemaker modes, the full exam question bank, strip export) will become paid - a one-time purchase, no subscription.',
-   '<b>Fixed:</b> anatomy hints during Mobitz I/II, a PVC waveform glitch at high heart rates, and broken hints after a resize while paused.',
-   '<b>Added a disclaimer:</b> this app is an educational tool, not for clinical diagnosis.',
+   '<b>New states:</b> RBBB, 1st-degree AV block, atrial flutter, and hypokalemia - now 28 states in total.',
+   '<b>Fixed:</b> anatomy hints on the live monitor could go missing on the already-drawn part of the trace after it wrapped around while paused - the whole strip is clickable now.',
+   '<b>Fixed:</b> the 12-lead strip footer text could overlap the diagnosis title for long names.',
+   '<b>Fixed:</b> the update-notes close button was unreachable at large font sizes - the dialog now scrolls.',
+   "<b>New app icon</b> in the app's actual brand blue.",
   ],
   patchClose: 'Got it, start',
   caliperMs: (ms,comment) => `↔ ${ms} ms${comment}`,
   caliperMv: mv => `↕ Ampl: ${mv} mV`,
   caliperNorm: ' normal', caliperBorder: ' borderline', caliperProlonged: ' prolonged',
   instruction: '<b>Tip:</b> While paused, click any ECG element for an anatomy reference.',
-  footerVersion: 'Version 0.9.1 · 2026',
+  footerVersion: 'Version 0.9.2 · 2026',
   disclaimer: 'Educational tool only. Not intended for clinical diagnosis or medical decision-making.',
   premiumTitle: 'Full Access',
   premiumIntro: 'This state and a few other features are part of the specialist premium pack.',
