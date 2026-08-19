@@ -1760,7 +1760,12 @@ function drawMonitorFrame() {
  ctx.stroke();
 
  prevY=y; globalTime+=SPEED; renderX+=SPEED;
- if (renderX>=canvas.width) { renderX=0; hitMap=new Array(canvas.width); }
+ // Не занулюємо hitMap тут: на екрані досі видно попередній прохід стрічки
+ // (очищується лише вузька смуга WIPE_W попереду renderX), тому масив із
+ // підказками мусить лишатись синхронним з тим, що намальовано - інакше
+ // права частина стрічки після обгортання виглядає як крива, але клік по
+ // ній нічого не знаходить, доки новий прохід її не перезапише
+ if (renderX>=canvas.width) { renderX=0; }
  animationId=requestAnimationFrame(drawMonitorFrame);
 }
 
