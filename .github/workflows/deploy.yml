@@ -23,3 +23,4 @@ jobs:
             **/.git*/**
             **/.github/**
             **/*.md
+            feature-graphic.png
