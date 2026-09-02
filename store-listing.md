@@ -10,14 +10,14 @@
 ЕКГ-симулятор
 
 **Короткий опис (80):**
-Живий ЕКГ-монітор: 32 стани, аритмії, STEMI, іспит-режим. Українською.
+Живий ЕКГ-монітор: 33 стани, аритмії, STEMI, іспит-режим. Українською.
 
 **Повний опис:**
 
 Живий, керований ЕКГ-монітор — а не просто банк статичних кейсів. ЕКГ-симулятор малює криву процедурно, у реальному часі: змінюй ЧСС повзунком, перемикай усі 12 відведень, ставлю на паузу й клікай по будь-якому зубцю для анатомічної підказки.
 
 **Що всередині:**
-✓ 32 стани і ритми — від норми до STEMI та постінфарктних Q-хвильових змін за локалізаціями, фібриляції й тріпотіння передсердь, повної та I ступеня АВ-блокади, блокад ніжок пучка Гіса, WPW, гіпер-/гіпокаліємії, кардіостимуляції
+✓ 33 стани і ритми — від норми до STEMI та постінфарктних Q-хвильових змін за локалізаціями, фібриляції й тріпотіння передсердь, повної та I ступеня АВ-блокади, блокад ніжок пучка Гіса, WPW, гіпер-/гіпокаліємії, кардіостимуляції
 ✓ Живий монітор із керуванням ЧСС і вибором відведення
 ✓ Циркуль для вимірювання інтервалів — як у реальній клінічній практиці
 ✓ Стрічка 12 відведень з експортом у PNG
@@ -28,7 +28,7 @@
 **Для кого:**
 Студенти медичних ВНЗ, інтерни, медсестринські програми, парамедики — усі, кому потрібно тренувати розпізнавання ЕКГ-ритмів практично, а не тільки заучувати картинки з підручника.
 
-22 з 32 станів і базовий режим іспиту — безкоштовно назавжди. Спеціалізований пак (рідкісні локалізації STEMI/старого ІМ, усі режими кардіостимуляції, повний банк питань іспиту, експорт стрічки) — одноразова покупка, без підписки.
+22 з 33 станів і базовий режим іспиту — безкоштовно назавжди. Спеціалізований пак (рідкісні локалізації STEMI/старого ІМ, усі режими кардіостимуляції, повний банк питань іспиту, експорт стрічки) — одноразова покупка, без підписки.
 
 ⚠️ Навчальний інструмент. Не призначений для клінічної діагностики чи прийняття медичних рішень.
 
@@ -40,14 +40,14 @@
 ECG Simulator
 
 **Short description (80):**
-Live ECG monitor: 32 states, arrhythmias, STEMI, exam mode. Free to start.
+Live ECG monitor: 33 states, arrhythmias, STEMI, exam mode. Free to start.
 
 **Full description:**
 
 A live, interactive ECG monitor — not just another bank of static cases. ECG Simulator draws the waveform procedurally, in real time: adjust heart rate with a slider, switch between all 12 leads, pause and click any wave for an anatomy hint.
 
 **What's inside:**
-✓ 32 rhythms and conditions — from normal sinus rhythm to STEMI and post-infarction Q-wave changes by location, atrial fibrillation, atrial flutter, complete and 1st-degree AV block, bundle branch blocks, WPW, hyper/hypokalemia, and pacemaker rhythms
+✓ 33 rhythms and conditions — from normal sinus rhythm to STEMI and post-infarction Q-wave changes by location, atrial fibrillation, atrial flutter, complete and 1st-degree AV block, bundle branch blocks, WPW, hyper/hypokalemia, and pacemaker rhythms
 ✓ Live monitor with HR control and lead selection
 ✓ Calipers for interval measurement — just like real clinical practice
 ✓ 12-lead strip with PNG export
@@ -58,7 +58,7 @@ A live, interactive ECG monitor — not just another bank of static cases. ECG S
 **Who it's for:**
 Medical students, interns, nursing students, paramedics — anyone who needs to practice recognizing ECG rhythms hands-on, not just memorize textbook images.
 
-22 of 32 states and basic exam mode are free forever. The specialist pack (rare STEMI/old-MI locations, all pacemaker modes, the full exam question bank, and strip export) is a one-time purchase — no subscription.
+22 of 33 states and basic exam mode are free forever. The specialist pack (rare STEMI/old-MI locations, all pacemaker modes, the full exam question bank, and strip export) is a one-time purchase — no subscription.
 
 ⚠️ Educational tool only. Not intended for clinical diagnosis or medical decision-making.
 
