@@ -1406,7 +1406,7 @@ function getBaseComplex(mode, cx, lc) {
  dy -= sharp(cx,52,10,70*q);
  dy += sharp(cx,62,6,20*Math.abs(q));
  if (cx>68 && cx<95) dy += st;
- dy += bump(cx,95,40,30*t,1);
+ dy -= bump(cx,95,40,30*t,1);
  } else if (mode==='infarct' || mode==='infarct_ant' || mode==='infarct_lat') {
  dy -= bump(cx,10,25,10*p);
  dy += sharp(cx,45,16,45*q);
